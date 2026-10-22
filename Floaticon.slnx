@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FloatAgent.Abstractions/FloatAgent.Abstractions.csproj" />
+  <Project Path="FloatAgent/FloatAgent.csproj" />
+  <Project Path="Floaticon/Floaticon.csproj" />
+</Solution>

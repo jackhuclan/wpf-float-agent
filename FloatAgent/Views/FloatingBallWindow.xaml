@@ -1,0 +1,72 @@
+<Window x:Class="Floaticon.Views.FloatingBallWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AI 助手"
+        Width="72" Height="72"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize"
+        Cursor="Hand"
+        MouseLeftButtonDown="OnBallMouseLeftButtonDown">
+
+    <!-- 右键菜单：打开聊天 / 退出 -->
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="打开聊天" Click="OnOpenChatMenuClick" />
+            <Separator />
+            <MenuItem Header="退出" Click="OnExitMenuClick" />
+        </ContextMenu>
+    </Window.ContextMenu>
+
+    <!-- 悬浮球本体 -->
+    <Grid>
+        <Border x:Name="BallBorder"
+                Width="60" Height="60"
+                CornerRadius="30"
+                Margin="6"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.Effect>
+                <DropShadowEffect Color="#5B5FEF" BlurRadius="18" ShadowDepth="3" Opacity="0.55" />
+            </Border.Effect>
+            <Border.RenderTransform>
+                <ScaleTransform x:Name="BallScale" ScaleX="1.0" ScaleY="1.0" />
+            </Border.RenderTransform>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#6366F1" Offset="0.0" />
+                    <GradientStop Color="#8B5CF6" Offset="0.55" />
+                    <GradientStop Color="#A855F7" Offset="1.0" />
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <!-- AI 机器人脸（纯矢量） -->
+            <Grid>
+                <!-- 天线 -->
+                <Rectangle Width="2" Height="7" Fill="#E0E7FF"
+                           VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,4,0,0" RadiusX="1" />
+                <Ellipse Width="6" Height="6" Fill="#FDE68A"
+                         VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,0,0,0" />
+
+                <!-- 脸部面板 -->
+                <Border Width="40" Height="30"
+                        CornerRadius="14"
+                        VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,6">
+                    <Border.Background>
+                        <SolidColorBrush Color="#FFFFFF" Opacity="0.22" />
+                    </Border.Background>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <!-- 左眼 -->
+                        <Ellipse Width="8" Height="10" Fill="#FFFFFF" Margin="4,0" />
+                        <!-- 右眼 -->
+                        <Ellipse Width="8" Height="10" Fill="#FFFFFF" Margin="4,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

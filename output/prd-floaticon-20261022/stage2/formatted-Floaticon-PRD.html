@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="docx-page-size" content="A4">
+  <title>Floaticon 桌面悬浮 AI 助手产品需求文档（PRD）</title>
+  <style>
+  /* 页面规则：正文页脚居中页码；封面命名页无页脚 */
+  @page {
+    @bottom-center { content: "第 " counter(page) " 页"; }
+  }
+  @page cover-page {
+    @bottom-center { content: none; }
+  }
+  section[role="cover"] { page: cover-page; }
+
+  :root {
+    /* 设计令牌：business-modern 主题（预编译产物映射） */
+    --color-primary: var(--color-primary, #1565C0);
+    --color-secondary: #0288D1;
+    --color-accent: #00897B;
+    --color-heading: #1A237E;
+    --color-text: #212121;
+    --color-muted: #616161;
+    --color-border: var(--color-divider, #E0E0E0);
+    --color-bg: var(--color-background, #FFFFFF);
+    --color-surface: var(--color-surface, #F5F7FA);
+    --ff-heading: var(--typography-fontFamily-heading, "Microsoft YaHei", "微软雅黑", "SimHei");
+    --ff-body: "SimSun", "宋体", serif;
+    --ff-code: Consolas, "Courier New", monospace;
+    --fs-h1: var(--typography-fontSize-h1, 18pt);
+    --fs-h2: var(--typography-fontSize-h2, 15pt);
+    --fs-h3: var(--typography-fontSize-h3, 13pt);
+    --fs-body: var(--typography-fontSize-body, 12pt);
+    --fs-small: var(--typography-fontSize-small, 10.5pt);
+    --fs-tiny: var(--typography-fontSize-tiny, 9pt);
+    --fs-cover-title: var(--typography-fontSize-coverTitle, 26pt);
+    --fs-cover-subtitle: var(--typography-fontSize-coverSubtitle, 15pt);
+    --fs-cover-category: var(--typography-fontSize-coverCategory, 14pt);
+    --lh-body: var(--typography-lineHeight-body, 1.6);
+    --spacing-paragraph: var(--spacing-paragraph, 0.75em);
+    --spacing-section: var(--spacing-sectionGap, 2.2em);
+    --spacing-block: var(--spacing-cardPadding, 1em);
+    --spacing-list: 0.35em;
+    --spacing-tight: 0.3em;
+    --spacing-cell: 0.45em;
+    --spacing-cell-x: 0.7em;
+    --spacing-half: 0.5em;
+    --spacing-note: 0.8em;
+    --spacing-toc: 1.2em;
+    --spacing-indent: 2em;
+    --spacing-cover-top: 8em;
+    --spacing-cover-gap: 5em;
+    --spacing-cover-title: 0.6em;
+    --spacing-cover-category: 1em;
+    --spacing-cover-meta: 0.4em;
+    --spacing-table: 0.4em;
+    --spacing-code: 3px;
+    --page-content-width: var(--layout-maxContentWidth, 160mm);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--ff-body);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--color-text);
+    background: var(--color-bg);
+    max-width: var(--page-content-width);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ===== 封面（标题禁用 h1~h6，用 p/div + 大字号） ===== */
+  .cover-category {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-cover-category);
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: 0.35em;
+    text-align: left;
+    margin: var(--spacing-cover-top) 0 var(--spacing-cover-category) 0;
+  }
+  .cover-title {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-cover-title);
+    font-weight: 700;
+    color: var(--color-heading);
+    text-align: left;
+    line-height: 1.3;
+    margin-bottom: var(--spacing-cover-title);
+  }
+  .cover-subtitle {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-cover-subtitle);
+    color: var(--color-muted);
+    text-align: left;
+    margin-bottom: var(--spacing-cover-gap);
+  }
+  .cover-meta {
+    font-family: var(--ff-body);
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+    text-align: left;
+  }
+  .cover-meta p { margin-bottom: var(--spacing-cover-meta); text-indent: 0; }
+
+  /* ===== 目录（独立一节，绑定封面命名页：无页眉页脚） ===== */
+  .toc-title {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h2);
+    font-weight: 700;
+    color: var(--color-heading);
+    text-align: center;
+    margin-bottom: var(--spacing-toc);
+    text-indent: 0;
+  }
+  .toc-list, .toc-list ol { list-style: none; list-style-type: none; padding-left: 0; }
+  .toc-list .toc-l2 { padding-left: var(--spacing-indent); }
+  .toc-list li { margin-bottom: var(--spacing-cell); text-indent: 0; }
+  .toc-list li a {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-small);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+  .toc-list li.toc-chapter > a { font-weight: 700; color: var(--color-heading); }
+
+  /* ===== 正文 ===== */
+  .report-body { padding-top: var(--spacing-half); }
+  .report-body h1 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    color: var(--color-heading);
+    margin: var(--spacing-section) 0 var(--spacing-block) 0;
+  }
+  .report-body h2 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h2);
+    font-weight: 700;
+    color: var(--color-heading);
+    margin: var(--spacing-section) 0 var(--spacing-paragraph) 0;
+    border-bottom: 2px solid var(--color-primary);
+    padding-bottom: var(--spacing-tight);
+  }
+  .report-body h3 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h3);
+    font-weight: 700;
+    color: var(--color-heading);
+    margin: var(--spacing-block) 0 var(--spacing-paragraph) 0;
+  }
+  .section-label {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: var(--spacing-paragraph) 0 var(--spacing-tight) 0;
+    text-indent: 0;
+  }
+  .report-body p {
+    font-family: var(--ff-body);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    text-indent: 0;
+    margin-bottom: var(--spacing-paragraph);
+  }
+  .report-body ul { margin: 0 0 var(--spacing-paragraph) 0; padding-left: var(--spacing-indent); }
+  .report-body ol { margin: 0 0 var(--spacing-paragraph) 0; padding-left: var(--spacing-indent); }
+  .report-body li {
+    font-family: var(--ff-body);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    margin-bottom: var(--spacing-list);
+  }
+  .report-body strong { font-weight: 700; }
+  .code-inline {
+    font-family: var(--ff-code);
+    font-size: var(--fs-small);
+    background: var(--color-surface);
+    padding: 0 var(--spacing-code);
+  }
+  pre.arch-tree {
+    font-family: var(--ff-code);
+    font-size: var(--fs-tiny);
+    line-height: 1.45;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-block);
+    margin: 0 0 var(--spacing-paragraph) 0;
+    white-space: pre-wrap;
+  }
+  .note-paragraph {
+    font-family: var(--ff-body);
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-surface);
+    padding: var(--spacing-half) var(--spacing-note);
+    margin-bottom: var(--spacing-paragraph);
+    text-indent: 0;
+  }
+
+  .executive-summary {
+    margin: var(--spacing-block) 0 var(--spacing-section) 0;
+    padding: var(--spacing-block);
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-surface);
+  }
+  .summary-header h2 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h3);
+    font-weight: 700;
+    color: var(--color-heading);
+    margin-bottom: var(--spacing-tight);
+  }
+  .executive-summary p {
+    font-family: var(--ff-body);
+    font-size: var(--fs-small);
+    line-height: var(--lh-body);
+    text-indent: 0;
+    margin-bottom: var(--spacing-tight);
+  }
+
+  /* ===== 表格 ===== */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--spacing-table) 0 var(--spacing-block) 0;
+  }
+  table.data-table th {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-small);
+    font-weight: 700;
+    color: var(--color-heading);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-cell) var(--spacing-cell-x);
+    text-align: left;
+    text-indent: 0;
+  }
+  table.data-table td {
+    font-family: var(--ff-body);
+    font-size: var(--fs-small);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-cell) var(--spacing-cell-x);
+    text-align: left;
+    vertical-align: top;
+    text-indent: 0;
+  }
+  </style>
+</head>
+<body>
+  <!-- ===== 封面 ===== -->
+  <section role="cover" class="report-cover">
+    <p class="cover-category">产品需求文档&nbsp;·&nbsp;PRD</p>
+    <p class="cover-title">Floaticon 桌面悬浮 AI 助手<br>产品需求文档</p>
+    <p class="cover-subtitle">Windows 桌面右下角常驻 AI 助手：悬浮球 + 流式对话 + 技能（Skills）+ 工具（Tools）</p>
+    <div class="cover-meta">
+      <p>文档版本：V1.0（对应已实现版本）</p>
+      <p>编写日期：2026 年 10 月 22 日</p>
+      <p>目标平台：Windows 10/11（.NET 10 WPF）</p>
+      <p>关联工程：Floaticon / FloatAgent / FloatAgent.Abstractions</p>
+    </div>
+  </section>
+
+  <!-- ===== 目录（独占一节） ===== -->
+  <section role="cover">
+    <nav class="doc-toc" aria-label="文档目录">
+      <p class="toc-title">目&nbsp;&nbsp;录</p>
+      <ol class="toc-list">
+        <li class="toc-chapter"><a href="#section-1">1&nbsp;&nbsp;文档信息</a></li>
+        <li class="toc-chapter"><a href="#section-2">2&nbsp;&nbsp;背景与目标</a></li>
+        <li class="toc-l2"><a href="#sec-2-1">2.1&nbsp;&nbsp;背景</a></li>
+        <li class="toc-l2"><a href="#sec-2-2">2.2&nbsp;&nbsp;产品目标</a></li>
+        <li class="toc-l2"><a href="#sec-2-3">2.3&nbsp;&nbsp;衡量指标</a></li>
+        <li class="toc-chapter"><a href="#section-3">3&nbsp;&nbsp;用户与使用场景</a></li>
+        <li class="toc-chapter"><a href="#section-4">4&nbsp;&nbsp;术语表</a></li>
+        <li class="toc-chapter"><a href="#section-5">5&nbsp;&nbsp;功能需求</a></li>
+        <li class="toc-l2"><a href="#fr-01">FR-01&nbsp;&nbsp;悬浮球</a></li>
+        <li class="toc-l2"><a href="#fr-02">FR-02&nbsp;&nbsp;聊天窗口</a></li>
+        <li class="toc-l2"><a href="#fr-03">FR-03&nbsp;&nbsp;输入与发送</a></li>
+        <li class="toc-l2"><a href="#fr-04">FR-04&nbsp;&nbsp;流式回复与 Markdown 渲染</a></li>
+        <li class="toc-l2"><a href="#fr-05">FR-05&nbsp;&nbsp;消息复制与 AI 消息工具栏</a></li>
+        <li class="toc-l2"><a href="#fr-06">FR-06&nbsp;&nbsp;模型配置窗</a></li>
+        <li class="toc-l2"><a href="#fr-07">FR-07&nbsp;&nbsp;技能系统（Skills）</a></li>
+        <li class="toc-l2"><a href="#fr-08">FR-08&nbsp;&nbsp;工具系统（Tools）</a></li>
+        <li class="toc-l2"><a href="#fr-09">FR-09&nbsp;&nbsp;滚动与流畅性体验</a></li>
+        <li class="toc-chapter"><a href="#section-6">6&nbsp;&nbsp;非功能需求</a></li>
+        <li class="toc-chapter"><a href="#section-7">7&nbsp;&nbsp;系统架构与工程结构</a></li>
+        <li class="toc-l2"><a href="#sec-7-1">7.1&nbsp;&nbsp;架构分层</a></li>
+        <li class="toc-l2"><a href="#sec-7-2">7.2&nbsp;&nbsp;关键数据流</a></li>
+        <li class="toc-chapter"><a href="#section-8">8&nbsp;&nbsp;已知问题与风险</a></li>
+        <li class="toc-chapter"><a href="#section-9">9&nbsp;&nbsp;版本历史（需求迭代记录）</a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <!-- ===== 正文 ===== -->
+  <section role="body" class="report-body" data-page-restart="1">
+
+    <div class="executive-summary">
+      <div class="summary-header"><h2>执行摘要</h2></div>
+      <p>Floaticon 是运行在 Windows 桌面右下角的常驻悬浮 AI 助手：以可拖拽悬浮球为唯一入口，点击弹出流式对话窗，内置 Markdown 渲染、token 统计与模型配置能力。</p>
+      <p>产品在 Microsoft Agent Framework（MAF）之上构建了可扩展的 Agent 底座：技能以 skills 目录下的 SKILL.md 文件承载（首发 grill-me 方案拷问、skill-creator 技能创作、get-weather 天气规约），工具通过 IAIToolService 注册 C# 函数（首发 get_weather 实时天气查询），均由 Agent 自动调用。</p>
+      <p>本文档汇总产品自 V0.1 骨架至 V1.0 工程化的全部需求，含 9 项功能需求（FR-01～FR-09）、8 项非功能需求及验收标准，对应代码已全部实现并通过端到端验证。</p>
+    </div>
+
+    <h2 id="section-1">1&nbsp;&nbsp;文档信息</h2>
+    <table class="data-table">
+      <thead><tr><th style="width:22%">项目</th><th>内容</th></tr></thead>
+      <tbody>
+      <tr><td>产品名称</td><td>Floaticon（桌面悬浮 AI 助手）</td></tr>
+      <tr><td>文档版本</td><td>V1.0</td></tr>
+      <tr><td>文档状态</td><td>已发布（对应已实现版本）</td></tr>
+      <tr><td>编写日期</td><td>2026-10-22</td></tr>
+      <tr><td>目标平台</td><td>Windows 10/11 桌面（.NET 10 WPF）</td></tr>
+      <tr><td>关联工程</td><td>Floaticon（启动壳）、FloatAgent（业务类库）、FloatAgent.Abstractions（接口类库）</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-2">2&nbsp;&nbsp;背景与目标</h2>
+    <p>本章说明 Floaticon 项目的由来、要达成的产品目标，以及衡量目标是否达成的关键指标。</p>
+
+    <h3 id="sec-2-1">2.1&nbsp;&nbsp;背景</h3>
+    <p>日常研发与业务工作中，用户需要频繁向大模型提问（技术方案评估、业务机会分析、天气查询等）。现有交互方式（浏览器、独立客户端）上下文切换成本高，缺少一个"随手可唤起、常驻桌面角落"的轻量入口。</p>
+    <p>Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可拖拽的悬浮球，点击即弹出聊天窗，支持流式对话、Markdown 渲染、可扩展的技能（Skills）与工具（Tools）体系。</p>
+
+    <h3 id="sec-2-2">2.2&nbsp;&nbsp;产品目标</h3>
+    <ol>
+      <li>提供零切换成本的 AI 问答入口：悬浮球常驻，一键唤起/收起聊天窗。</li>
+      <li>提供接近主流 AI 产品的对话体验：流式逐字输出、Markdown 渲染、token 统计。</li>
+      <li>建立可扩展的 Agent 能力底座：技能（SKILL.md 文件）与工具（C# AIFunction）均可在不改核心代码的情况下扩展。</li>
+      <li>模型供应商可配置：支持任意 OpenAI 兼容端点（默认 DeepSeek），配置保存后立即生效。</li>
+    </ol>
+
+    <h3 id="sec-2-3">2.3&nbsp;&nbsp;衡量指标</h3>
+    <ul>
+      <li>悬浮球点击到聊天窗弹出的响应时间无明显可感知延迟（300ms 量级以内）。</li>
+      <li>对话回复流式呈现，无整段卡顿；长回复滚动流畅。</li>
+      <li>技能/工具扩展只需新增文件或注册代码，无需修改聊天核心链路。</li>
+    </ul>
+
+    <h2 id="section-3">3&nbsp;&nbsp;用户与使用场景</h2>
+    <p>产品面向以研发与产品人员为主的桌面重度用户，以下为典型角色与场景拆解。</p>
+    <table class="data-table">
+      <thead><tr><th style="width:24%">用户角色</th><th style="width:42%">典型场景</th><th>核心诉求</th></tr></thead>
+      <tbody>
+      <tr><td>研发/产品人员（主要用户）</td><td>写方案前让 AI 拷问方案的漏洞（grill-me 技能）</td><td>快速唤起、多轮结构化追问</td></tr>
+      <tr><td>研发/产品人员</td><td>查询城市天气，决定是否带伞/出行</td><td>真实数据，不允许模型编造</td></tr>
+      <tr><td>技能创作者</td><td>创建、改进、评测新的技能</td><td>skill-creator 方法论内置</td></tr>
+      <tr><td>通用问答</td><td>技术问题、翻译、总结</td><td>流式输出、可复制 Markdown 原文</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-4">4&nbsp;&nbsp;术语表</h2>
+    <p>为避免歧义，本文档中反复出现的术语按以下定义使用。</p>
+    <table class="data-table">
+      <thead><tr><th style="width:24%">术语</th><th>定义</th></tr></thead>
+      <tbody>
+      <tr><td>悬浮球</td><td>常驻桌面右下角的圆形 AI 入口图标，独立置顶无边框窗口</td></tr>
+      <tr><td>流式回复</td><td>模型生成内容逐 token 推送并实时渲染，而非等待完整回复</td></tr>
+      <tr><td>MAF</td><td>Microsoft Agent Framework（NuGet：Microsoft.Agents.AI 1.25.0），承载 Agent、技能与工具调用</td></tr>
+      <tr><td>SKILL.md</td><td>技能定义文件，YAML frontmatter（name/description）+ 正文指令</td></tr>
+      <tr><td>AIFunction</td><td>Microsoft.Extensions.AI 的函数工具抽象，由 Agent 自动调用</td></tr>
+      <tr><td>渐进式披露</td><td>模型先看到技能目录，按需 load_skill 加载完整内容，节省上下文</td></tr>
+      <tr><td>config.json</td><td>运行目录下的模型配置持久化文件（API Key、模型名、接口地址）</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-5">5&nbsp;&nbsp;功能需求</h2>
+    <p class="note-paragraph">&nbsp;&nbsp;优先级定义：P0 = 本版本必须交付；P1 = 重要增强；P2 = 体验优化。以下各功能均已实现并通过端到端验证。</p>
+
+    <h3 id="fr-01">FR-01&nbsp;&nbsp;悬浮球（P0）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>应用启动后仅在桌面右下角显示悬浮球，聊天窗按需弹出；悬浮球为独立窗口：置顶（Topmost）、无边框、透明背景、不占用任务栏。</li>
+      <li>悬浮球直径 60 DIP（窗口 72×72），定位在工作区右下角（距边缘 24 DIP），始终可见。</li>
+      <li>支持鼠标左键拖拽移动；拖拽结束若位移 ≤4 DIP 判定为"点击"，大于 4 DIP 判定为"拖拽"。</li>
+      <li>单击悬浮球切换聊天窗显示/隐藏；弹出时球体播放弹性缩放动画（0.85 → 1.0，180ms，BackEase）。</li>
+      <li>右键菜单提供"打开聊天""退出"两个入口；"退出"结束整个应用。</li>
+      <li>聊天窗打开状态下拖动悬浮球，聊天窗跟随移动到球体正上方。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 启动后仅见悬浮球，任务栏无入口；置顶于所有普通窗口之上。</li>
+      <li>□ 拖拽后松开不触发聊天窗；原地单击正常切换聊天窗。</li>
+      <li>□ 右键菜单两项功能可用；退出后进程结束、资源释放。</li>
+    </ul>
+
+    <h3 id="fr-02">FR-02&nbsp;&nbsp;聊天窗口（P0）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>无边框、圆角（16px）、带阴影的自绘窗口，尺寸 456×811 DIP。</li>
+      <li>自绘标题栏：品牌色 #6366F1，左侧"迷你球图标 + AI 助手"标题，右侧"⚙ 配置"与"✕ 收起"按钮；标题栏可拖动窗口。</li>
+      <li>弹出位置：水平居中于悬浮球正上方（间距 10 DIP），并夹取到屏幕工作区内，避免弹出屏外。</li>
+      <li>点击窗口外部不关闭窗口；"✕"为隐藏（Hide）而非销毁，再次点击悬浮球可恢复，历史消息保留。</li>
+      <li>消息区 + 输入区 + 标题栏三段式布局；消息气泡分用户侧（靠右、蓝色 #4F6BF5、圆角 12,12,4,12）与 AI 侧（靠左、白色、圆角 12,12,12,4）。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 窗口在多屏/小屏场景弹出位置均在工作区内。</li>
+      <li>□ 收起后再唤起，历史消息保留。</li>
+    </ul>
+
+    <h3 id="fr-03">FR-03&nbsp;&nbsp;输入与发送（P0）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>输入框多行显示（自动换行，最小高 34、最大高 96 DIP），Text 与 ViewModel 双向同步（PropertyChanged 触发）。</li>
+      <li><strong>Enter 直接发送</strong>；<strong>Shift+Enter 在光标处插入换行</strong>。中文输入法状态下，首次 Enter 用于候选上屏（不触发发送），上屏后的 Enter 才发送。</li>
+      <li>空输入不可发送（按钮禁用态，透明度 0.35）；输入非空时右下角显示圆形发送按钮（38px，#6366F1，白色纸飞机箭头图标，hover #7C7DF3、按下 #4F52D9，图标在按钮内水平垂直居中）。</li>
+      <li>生成过程中发送按钮切换为<strong>停止按钮</strong>（同位置、同风格、白色圆角方块图标），点击中止本次生成；中止后保留已生成文本并追加"（已停止生成）"。</li>
+      <li>发送后输入框立即清空；生成结束后按钮恢复为发送态。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 英文/中文输入法下 Enter 均可发送（IME 上屏行为除外）。</li>
+      <li>□ Shift+Enter 换行不触发发送。</li>
+      <li>□ 生成中可随时停止，无残留忙碌态。</li>
+    </ul>
+
+    <h3 id="fr-04">FR-04&nbsp;&nbsp;流式回复与 Markdown 渲染（P0）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>对话通过 DeepSeek（OpenAI 兼容协议）完成，经 MAF Agent（ChatClientAgent）承载；回复逐 token 流式推送。</li>
+      <li>发送后先显示"正在输入"占位气泡（三点动画），收到首块内容后切换为正文渲染。</li>
+      <li>AI 消息使用 MdXaml 渲染 Markdown（内置 Compact 紧凑风格：正文 12px、H1 16/H2 14/H3 13），字体统一 Microsoft YaHei UI；用户消息保持纯文本。</li>
+      <li>每次回复结束回填 token 用量与模型名（见 FR-05）。</li>
+      <li>系统提示词约束：回答简洁、直接、可执行；技能/工具返回内容为事实来源，禁止编造真实世界数据。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 标题、加粗、行内代码、代码块、引用、列表渲染正常。</li>
+      <li>□ 流式过程中无整窗卡死；停止后无异常冒泡到用户。</li>
+    </ul>
+
+    <h3 id="fr-05">FR-05&nbsp;&nbsp;消息复制与 AI 消息工具栏（P1）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>用户气泡与 AI 气泡均支持右键菜单"复制"（复制原始 Markdown 文本，剪贴板异常需捕获提示，不崩溃）。</li>
+      <li>每条 AI 消息下方展示工具栏：复制图标按钮（双矩形图标）；token 统计"◇ 共消耗 N tokens"（N 为本次回复总消耗，发生工具调用导致模型多次调用时<strong>累加所有调用</strong>的输入/输出/总 token）；模型名"⚡ deepseek-chat"。</li>
+      <li>问候语等无用量信息的消息自动隐藏统计与模型名区域。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 带工具调用的回复统计值等于各次调用之和（已实测验证）。</li>
+      <li>□ 复制内容与气泡原文一致。</li>
+    </ul>
+
+    <h3 id="fr-06">FR-06&nbsp;&nbsp;模型配置窗（P0）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>标题栏 ⚙ 打开模态配置窗（440×500，Topmost，圆角风格与主窗一致）。</li>
+      <li>三个必填字段：API Key（密码态输入）、模型（下拉框，预置 qwen3:1.7b、qwen3:8b、deepseek-flash、deepseek-v4-pro；已有配置值不在列表中时自动补入首项）、接口地址（OpenAI 兼容端点，如 https://api.deepseek.com/v1）。</li>
+      <li>实时校验：任一必填字段清空立即标红（边框 #EF4444，1.5px），输入后立即恢复；接口地址保存前校验必须为合法 http/https URL。</li>
+      <li><strong>测试连接</strong>按钮：用当前表单值（允许未保存）发一次真实小请求，明确区分三种结果——成功、鉴权失败（401 类）、不可达，并以醒目文案展示。</li>
+      <li>保存写入运行目录 config.json，<strong>立即生效</strong>（每次请求按当前配置重建 Agent，无需重启）；保存成功后自动关闭窗口。</li>
+      <li>配置文件缺失或损坏时回落默认配置，不阻塞启动。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 三字段清空全部标红；填回后红色即时消失。</li>
+      <li>□ 测试连接对错误 Key/错误地址给出明确区分的提示。</li>
+      <li>□ 修改模型后立即发消息使用新模型（AI 工具栏模型名可验证）。</li>
+    </ul>
+
+    <h3 id="fr-07">FR-07&nbsp;&nbsp;技能系统 Skills（P1）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>技能以文件夹形式存放于 skills/ 目录（随程序输出到 exe 旁），每个技能一个目录，含 SKILL.md（YAML frontmatter：name/description + 正文指令）与可选资源文件。</li>
+      <li>基于 MAF 1.25 内置 AgentSkillsProvider 加载：运行时模型先获得技能目录摘要，按需通过 load_skill / read_skill_resource 渐进加载完整内容。</li>
+      <li>首发内置三个技能：</li>
+    </ol>
+    <table class="data-table">
+      <thead><tr><th style="width:22%">技能</th><th>定位与核心规则</th></tr></thead>
+      <tbody>
+      <tr><td>grill-me（方案拷问）</td><td>把用户方案视为决策树，按"前沿（frontier）"逐轮编号提问并给出推荐答案；事实自查（工具查证）、决策交用户；前沿清空后输出共识摘要，未经确认不执行方案。</td></tr>
+      <tr><td>skill-creator（技能创作）</td><td>创建、改进、评测技能的完整方法论（含 references 参考资料）。</td></tr>
+      <tr><td>get-weather（天气查询规约）</td><td>强制通过 get_weather 工具取数、禁止凭记忆编造、多城市多次调用、未指明城市先反问、失败时明确降级话术。</td></tr>
+      </tbody>
+    </table>
+    <ol start="4">
+      <li>桌面端无审批 UI：加载技能、读取资源等操作自动放行（Disable 全部 Approval）。</li>
+      <li>只暴露文档类资源（.md/.json/.yaml/.yml/.txt），不执行技能脚本。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 提示"用 grill-me 拷问我的方案"时，Agent 先加载技能，再按 ❓Q1/➡️推荐答案 的轮次格式多轮追问。</li>
+      <li>□ 询问天气时自动调用工具并遵循 get-weather 规约的输出格式。</li>
+      <li>□ 在 skills 目录新增技能文件夹（含合法 SKILL.md）后重启即可被识别。</li>
+    </ul>
+
+    <h3 id="fr-08">FR-08&nbsp;&nbsp;工具系统 Tools（P0）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>提供工具注册表抽象 IAIToolService（独立接口工程 FloatAgent.Abstractions）：AddTool(AIFunction) 按函数名注册（重名覆盖）、AsTools() 输出全部工具；实现类 AIToolService 置于 FloatAgent。</li>
+      <li>AgentChatService 注入 IAIToolService，将全部工具交给 MAF Agent 自动函数调用。</li>
+      <li>首发内置工具 <strong>get_weather</strong>（C# 实现，Open-Meteo 数据源，无需 API Key）：</li>
+    </ol>
+    <ul>
+      <li>输入：城市名（中英文均可）、可选温度单位（摄氏/华氏）。</li>
+      <li>流程：地理编码 → 实时天气 + 未来三天预报。</li>
+      <li>输出：中文结构化文本（实时温度/体感/湿度/风速/降水 + 逐日天气、区间温度、降水概率），WMO 天气代码映射为中文描述，末尾标注数据来源。</li>
+      <li>失败处理：城市未找到、网络异常、解析异常均返回可读中文错误信息，不向模型抛异常。</li>
+    </ul>
+    <ol start="4">
+      <li>Agent 具备多轮工具调用能力：一次用户提问可触发"调用工具 → 拿结果 → 继续生成"的完整链路。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 提问"上海今天要带伞吗"返回真实天气数据（与 Open-Meteo 一致）。</li>
+      <li>□ 工具调用失败时用户收到可读的失败说明而非报错堆栈。</li>
+    </ul>
+
+    <h3 id="fr-09">FR-09&nbsp;&nbsp;滚动与流畅性体验（P1）</h3>
+    <p class="section-label">需求描述</p>
+    <ol>
+      <li>消息区滚动条为自定义细窄样式（宽 6px、圆角滑块，hover/拖拽变色），通过自定义 ScrollViewer 模板显式引用（隐式样式无法穿透模板边界）。</li>
+      <li>消息区采用像素滚动（CanContentScroll=False），保证滑块尺寸计算正确与平滑位移。</li>
+      <li>滚轮滚动带缓动动画：每档滚动 96px，170ms ease-out cubic 帧插值（15ms/帧），替代原生"一次跳 3 行"的生硬体验；支持连续滚动打断衔接。</li>
+      <li>流式回复期间消息区自动跟随底部（距底 96px 内视为跟随态）；用户主动上翻查看历史时不被打断；新消息到达时强制回底。</li>
+      <li>流式文本按 60ms 限流批量刷新，避免 Markdown 每分片整篇重排导致的卡顿；流结束后做最终全文刷新。</li>
+    </ol>
+    <p class="section-label">验收标准</p>
+    <ul>
+      <li>□ 长回复场景滚轮滚动平滑无跳变，可随时反向滚动。</li>
+      <li>□ 生成过程中视图持续跟随最新内容；上翻后不再自动回底。</li>
+    </ul>
+
+    <h2 id="section-6">6&nbsp;&nbsp;非功能需求</h2>
+    <p>除功能行为外，产品须满足以下技术与质量约束。</p>
+    <table class="data-table">
+      <thead><tr><th style="width:12%">编号</th><th style="width:14%">类别</th><th>需求</th></tr></thead>
+      <tbody>
+      <tr><td>NFR-01</td><td>技术栈</td><td>.NET 10（net10.0-windows）WPF；CommunityToolkit.Mvvm 8.4.2（MVVM）；Microsoft.Extensions.DependencyInjection 10.0.12；Microsoft.Extensions.Hosting 10.0.12；Microsoft.Agents(.AI) 1.25.0；MdXaml 2.0.0-pre</td></tr>
+      <tr><td>NFR-02</td><td>启动方式</td><td>通过 Host.CreateApplicationBuilder 构建通用主机：注册服务 → Build → Start → 显示悬浮球；退出时 StopAsync + Dispose 释放资源</td></tr>
+      <tr><td>NFR-03</td><td>工程结构</td><td>三工程拆分：Floaticon（WPF 启动壳：App/Host/DI 装配）、FloatAgent（业务类库：Models/Services/Tools/ViewModels/Views/skills）、FloatAgent.Abstractions（接口：IAIToolService）；依赖方向 Floaticon → FloatAgent → FloatAgent.Abstractions，禁止反向依赖</td></tr>
+      <tr><td>NFR-04</td><td>可扩展性</td><td>新增工具：实现 AIFunction 并注册到 IAIToolService；新增技能：添加 skills 子目录；均不需改动聊天核心链路</td></tr>
+      <tr><td>NFR-05</td><td>可靠性</td><td>配置缺失/损坏回落默认值；所有用户可见失败以气泡内可读文案呈现；剪贴板、网络异常均有兜底，不允许未处理异常崩溃</td></tr>
+      <tr><td>NFR-06</td><td>性能</td><td>流式渲染限流 60ms；滚轮动画 15ms/帧；技能按需加载（渐进披露）控制上下文开销</td></tr>
+      <tr><td>NFR-07</td><td>安全</td><td>API Key 明文保存于本地 config.json（需提示用户注意保管/轮换）；不执行技能脚本，资源读取限定白名单扩展名</td></tr>
+      <tr><td>NFR-08</td><td>兼容</td><td>支持任意 OpenAI 兼容端点（DeepSeek、本地 Ollama qwen 系列等），不锁定供应商</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-7">7&nbsp;&nbsp;系统架构与工程结构</h2>
+    <p>系统采用"启动壳 + 业务类库 + 接口类库"的三层工程拆分，依赖方向单向，保证业务逻辑可独立复用与测试。</p>
+
+    <h3 id="sec-7-1">7.1&nbsp;&nbsp;架构分层</h3>
+    <pre class="arch-tree">Floaticon（启动壳，WinExe）
+  ├─ App.xaml.cs：Host.CreateApplicationBuilder → DI 装配 → ServiceLocator 赋值 → 显示悬浮球
+  └─ 依赖：Microsoft.Extensions.Hosting / DependencyInjection
+        │
+        ▼
+FloatAgent（业务类库，net10.0-windows + UseWPF）
+  ├─ Services/：AgentChatService（MAF 流式对话）、SkillProviderFactory（技能加载）、
+  │             AIToolService（工具注册表）、JsonConfigService、OpenAIModelTester、ServiceLocator
+  ├─ Tools/：WeatherTool（get_weather，Open-Meteo）
+  ├─ ViewModels/：ChatViewModel、ConfigViewModel、ChatMessage
+  ├─ Views/：FloatingBallWindow、ChatWindow、ConfigWindow、Behaviors/SmoothScrollBehavior
+  ├─ Models/：ChatTurn、TokenUsage、ModelConfig
+  └─ skills/：grill-me、skill-creator、get-weather（随输出复制到主程序目录）
+        │
+        ▼
+FloatAgent.Abstractions（接口类库，net10.0）
+  └─ IAIToolService（AddTool / AsTools）</pre>
+
+    <h3 id="sec-7-2">7.2&nbsp;&nbsp;关键数据流</h3>
+    <ol>
+      <li><strong>发送链路</strong>：ChatViewModel → IChatService.StreamReplyAsync → AgentChatService（按配置建 Agent：ChatClientAgentOptions 挂 Instructions/Tools/AIContextProviders[技能]）→ MAF RunStreamingAsync → StreamChunk(Text/Usage) → 气泡增量渲染。</li>
+      <li><strong>工具调用链路</strong>：模型输出 function_call → MAF 自动执行 AIFunction → 结果回传模型 → 二次生成；各次用量累加后统一回填。</li>
+      <li><strong>配置链路</strong>：ConfigViewModel → JsonConfigService.Save(config.json) → 内存 Current 立即更新 → 下次请求生效。</li>
+    </ol>
+
+    <h2 id="section-8">8&nbsp;&nbsp;已知问题与风险</h2>
+    <p>以下为当前版本已识别的风险与待改进项，均已评估影响并给出缓解措施。</p>
+    <table class="data-table">
+      <thead><tr><th style="width:10%">编号</th><th style="width:28%">风险/问题</th><th style="width:24%">影响</th><th>缓解措施</th></tr></thead>
+      <tbody>
+      <tr><td>R-01</td><td>API Key 明文存储于 config.json</td><td>凭据泄露风险</td><td>文档提示用户保管与轮换；后续可加密存储</td></tr>
+      <tr><td>R-02</td><td>长回复 Markdown 全篇重排</td><td>轻微渲染开销</td><td>已做 60ms 限流；必要时可切换"生成中纯文本、完成后 Markdown"</td></tr>
+      <tr><td>R-03</td><td>用户消息暂不渲染 Markdown</td><td>含 Markdown 语法的用户输入原样展示</td><td>蓝底气泡上 Markdown 样式观感差，待定方案</td></tr>
+      <tr><td>R-04</td><td>IME 组合态 Enter 语义</td><td>中文输入首条 Enter 用于上屏（标准行为）</td><td>已按主流产品惯例处理，文档明示</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-9">9&nbsp;&nbsp;版本历史（需求迭代记录）</h2>
+    <p>产品自骨架版本起共经历 11 个需求节点，各节点需求内容如下。</p>
+    <table class="data-table">
+      <thead><tr><th style="width:20%">版本节点</th><th>需求内容</th></tr></thead>
+      <tbody>
+      <tr><td>V0.1 骨架</td><td>悬浮球 + 点击弹出聊天窗（.NET 10 WPF，无边框置顶可拖拽）</td></tr>
+      <tr><td>V0.2 框架</td><td>引入 CommunityToolkit.Mvvm 8.4.2、依赖注入 10.0.12</td></tr>
+      <tr><td>V0.3 对话</td><td>接入 DeepSeek 实现流式聊天</td></tr>
+      <tr><td>V0.4 Agent 化</td><td>MAF 重构；Enter 发送/Shift+Enter 多行；配置窗（必填校验变红、config.json）</td></tr>
+      <tr><td>V0.5 交互修复</td><td>测试连接按钮；字段清空标红；发送→停止按钮（参考图风格、图标居中）</td></tr>
+      <tr><td>V0.6 配置增强</td><td>模型下拉框（4 个预置项）；发送按钮与标题栏风格统一</td></tr>
+      <tr><td>V0.7 渲染</td><td>MdXaml 渲染；双方消息可复制；AI 消息工具栏（复制/token/模型）</td></tr>
+      <tr><td>V0.8 尺寸与细节</td><td>窗口宽高 ×1.2、高度再 ×1.3（456×811）；AI 字体 Compact；细窄滚动条</td></tr>
+      <tr><td>V0.9 平台化</td><td>Host.CreateApplicationBuilder 启动；skills 技能体系（grill-me/skill-creator/get-weather）；IAIToolService 工具注入（get_weather）</td></tr>
+      <tr><td>V0.10 体验优化</td><td>滚轮缓动 + 流式跟随滚动 + 限流刷新；修复 Enter 不发送（TextBox 类处理器抢占问题）</td></tr>
+      <tr><td>V1.0 工程化</td><td>拆分三工程：Floaticon 启动壳 / FloatAgent 类库 / FloatAgent.Abstractions 接口</td></tr>
+      </tbody>
+    </table>
+
+  </section>
+</body>
+</html>
