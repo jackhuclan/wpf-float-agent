@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Floaticon</RootNamespace>
+    <AssemblyName>Floaticon</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FloatAgent\FloatAgent.csproj" />
+    <ProjectReference Include="..\FloatAgent.Abstractions\FloatAgent.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- 技能源文件在 FloatAgent，运行时需位于主程序输出目录（SkillProviderFactory 从 BaseDirectory 找） -->
+  <ItemGroup>
+    <Content Include="..\FloatAgent\skills\**\*" Link="skills\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

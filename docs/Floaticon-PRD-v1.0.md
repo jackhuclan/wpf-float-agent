@@ -1,12 +1,12 @@
 # Floaticon 桌面悬浮 AI 助手 产品需求文档（PRD）
 
-| 项目 | 内容 |
-|------|------|
-| 产品名称 | Floaticon（桌面悬浮 AI 助手） |
-| 文档版本 | V1.0 |
-| 文档状态 | 已发布（对应已实现版本） |
-| 编写日期 | 2026-10-22 |
-| 目标平台 | Windows 10/11 桌面（.NET 10 WPF） |
+| 项目   | 内容                                                            |
+| ---- | ------------------------------------------------------------- |
+| 产品名称 | Floaticon（桌面悬浮 AI 助手）                                         |
+| 文档版本 | V1.0                                                          |
+| 文档状态 | 已发布（对应已实现版本）                                                  |
+| 编写日期 | 2026-10-22                                                    |
+| 目标平台 | Windows 10/11 桌面（.NET 10 WPF）                                 |
 | 关联工程 | Floaticon（启动壳）、FloatAgent（业务类库）、FloatAgent.Abstractions（接口类库） |
 
 ## 执行摘要
@@ -40,24 +40,24 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 ## 2. 用户与使用场景
 
-| 用户角色 | 典型场景 | 核心诉求 |
-|---------|---------|---------|
-| 研发/产品人员（主要用户） | 写方案前让 AI 拷问方案的漏洞（grill-me 技能） | 快速唤起、多轮结构化追问 |
-| 研发/产品人员 | 查询城市天气、决定是否带伞/出行 | 真实数据，不允许模型编造 |
-| 技能创作者 | 创建、改进、评测新的技能 | skill-creator 方法论内置 |
-| 通用问答 | 技术问题、翻译、总结 | 流式输出、可复制 Markdown 原文 |
+| 用户角色          | 典型场景                          | 核心诉求                 |
+| ------------- | ----------------------------- | -------------------- |
+| 研发/产品人员（主要用户） | 写方案前让 AI 拷问方案的漏洞（grill-me 技能） | 快速唤起、多轮结构化追问         |
+| 研发/产品人员       | 查询城市天气、决定是否带伞/出行              | 真实数据，不允许模型编造         |
+| 技能创作者         | 创建、改进、评测新的技能                  | skill-creator 方法论内置  |
+| 通用问答          | 技术问题、翻译、总结                    | 流式输出、可复制 Markdown 原文 |
 
 ## 3. 术语表
 
-| 术语 | 定义 |
-|------|------|
-| 悬浮球 | 常驻桌面右下角的圆形 AI 入口图标，独立置顶无边框窗口 |
-| 流式回复 | 模型生成内容逐 token 推送并实时渲染，而非等待完整回复 |
-| MAF | Microsoft Agent Framework（NuGet：Microsoft.Agents.AI 1.25.0），承载 Agent、技能与工具调用 |
-| SKILL.md | 技能定义文件，YAML frontmatter（name/description）+ 正文指令 |
-| AIFunction | Microsoft.Extensions.AI 的函数工具抽象，由 Agent 自动调用 |
-| 渐进式披露 | 模型先看到技能目录，按需 load_skill 加载完整内容，节省上下文 |
-| config.json | 运行目录下的模型配置持久化文件（API Key、模型名、接口地址） |
+| 术语          | 定义                                                                           |
+| ----------- | ---------------------------------------------------------------------------- |
+| 悬浮球         | 常驻桌面右下角的圆形 AI 入口图标，独立置顶无边框窗口                                                 |
+| 流式回复        | 模型生成内容逐 token 推送并实时渲染，而非等待完整回复                                               |
+| MAF         | Microsoft Agent Framework（NuGet：Microsoft.Agents.AI 1.25.0），承载 Agent、技能与工具调用 |
+| SKILL.md    | 技能定义文件，YAML frontmatter（name/description）+ 正文指令                              |
+| AIFunction  | Microsoft.Extensions.AI 的函数工具抽象，由 Agent 自动调用                                 |
+| 渐进式披露       | 模型先看到技能目录，按需 load_skill 加载完整内容，节省上下文                                         |
+| config.json | 运行目录下的模型配置持久化文件（API Key、模型名、接口地址）                                            |
 
 ## 4. 功能需求
 
@@ -167,14 +167,14 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 2. 基于 MAF 1.25 内置 `AgentSkillsProvider` 加载：运行时模型先获得技能目录摘要，按需通过 `load_skill` / `read_skill_resource` 渐进加载完整内容。
 3. 首发内置三个技能：
 
-| 技能 | 定位与核心规则 |
-|------|--------------|
-| grill-me（方案拷问） | 把用户方案视为决策树，按"前沿（frontier）"逐轮编号提问并给出推荐答案；事实自查（工具查证）、决策交用户；前沿清空后输出共识摘要，未经确认不执行方案。 |
-| skill-creator（技能创作） | 创建、改进、评测技能的完整方法论（含 references 参考资料）。 |
-| get-weather（天气查询规约） | 强制通过 get_weather 工具取数、禁止凭记忆编造、多城市多次调用、未指明城市先反问、失败时明确降级话术。 |
+| 技能                  | 定位与核心规则                                                                         |
+| ------------------- | ------------------------------------------------------------------------------- |
+| grill-me（方案拷问）      | 把用户方案视为决策树，按"前沿（frontier）"逐轮编号提问并给出推荐答案；事实自查（工具查证）、决策交用户；前沿清空后输出共识摘要，未经确认不执行方案。 |
+| skill-creator（技能创作） | 创建、改进、评测技能的完整方法论（含 references 参考资料）。                                            |
+| get-weather（天气查询规约） | 强制通过 get_weather 工具取数、禁止凭记忆编造、多城市多次调用、未指明城市先反问、失败时明确降级话术。                       |
 
-4. 桌面端无审批 UI：加载技能、读取资源等操作自动放行（Disable 全部 Approval）。
-5. 只暴露文档类资源（.md/.json/.yaml/.yml/.txt），不执行技能脚本。
+1. 桌面端无审批 UI：加载技能、读取资源等操作自动放行（Disable 全部 Approval）。
+2. 只暴露文档类资源（.md/.json/.yaml/.yml/.txt），不执行技能脚本。
 
 **验收标准**
 
@@ -217,16 +217,16 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 ## 5. 非功能需求
 
-| 编号 | 类别 | 需求 |
-|------|------|------|
-| NFR-01 | 技术栈 | .NET 10（net10.0-windows）WPF；CommunityToolkit.Mvvm 8.4.2（MVVM）；Microsoft.Extensions.DependencyInjection 10.0.12；Microsoft.Extensions.Hosting 10.0.12；Microsoft.Agents(.AI) 1.25.0；MdXaml 2.0.0-pre |
-| NFR-02 | 启动方式 | 通过 `Host.CreateApplicationBuilder` 构建通用主机：注册服务 → Build → Start → 显示悬浮球；退出时 StopAsync + Dispose 释放资源 |
+| 编号     | 类别   | 需求                                                                                                                                                                                                             |
+| ------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NFR-01 | 技术栈  | .NET 10（net10.0-windows）WPF；CommunityToolkit.Mvvm 8.4.2（MVVM）；Microsoft.Extensions.DependencyInjection 10.0.12；Microsoft.Extensions.Hosting 10.0.12；Microsoft.Agents(.AI) 1.25.0；MdXaml 2.0.0-pre              |
+| NFR-02 | 启动方式 | 通过 `Host.CreateApplicationBuilder` 构建通用主机：注册服务 → Build → Start → 显示悬浮球；退出时 StopAsync + Dispose 释放资源                                                                                                            |
 | NFR-03 | 工程结构 | 三工程拆分：Floaticon（WPF 启动壳：App/Host/DI 装配）、FloatAgent（业务类库：Models/Services/Tools/ViewModels/Views/skills）、FloatAgent.Abstractions（接口：IAIToolService）；依赖方向 Floaticon → FloatAgent → FloatAgent.Abstractions，禁止反向依赖 |
-| NFR-04 | 可扩展性 | 新增工具：实现 AIFunction 并注册到 IAIToolService；新增技能：添加 skills 子目录；均不需改动聊天核心链路 |
-| NFR-05 | 可靠性 | 配置缺失/损坏回落默认值；所有用户可见失败以气泡内可读文案呈现；剪贴板、网络异常均有兜底，不允许未处理异常崩溃 |
-| NFR-06 | 性能 | 流式渲染限流 60ms；滚轮动画 15ms/帧；技能按需加载（渐进披露）控制上下文开销 |
-| NFR-07 | 安全 | API Key 明文保存于本地 config.json（需提示用户注意保管/轮换）；不执行技能脚本，资源读取限定白名单扩展名 |
-| NFR-08 | 兼容 | 支持任意 OpenAI 兼容端点（DeepSeek、本地 Ollama qwen 系列等），不锁定供应商 |
+| NFR-04 | 可扩展性 | 新增工具：实现 AIFunction 并注册到 IAIToolService；新增技能：添加 skills 子目录；均不需改动聊天核心链路                                                                                                                                          |
+| NFR-05 | 可靠性  | 配置缺失/损坏回落默认值；所有用户可见失败以气泡内可读文案呈现；剪贴板、网络异常均有兜底，不允许未处理异常崩溃                                                                                                                                                        |
+| NFR-06 | 性能   | 流式渲染限流 60ms；滚轮动画 15ms/帧；技能按需加载（渐进披露）控制上下文开销                                                                                                                                                                    |
+| NFR-07 | 安全   | API Key 明文保存于本地 config.json（需提示用户注意保管/轮换）；不执行技能脚本，资源读取限定白名单扩展名                                                                                                                                                 |
+| NFR-08 | 兼容   | 支持任意 OpenAI 兼容端点（DeepSeek、本地 Ollama qwen 系列等），不锁定供应商                                                                                                                                                           |
 
 ## 6. 系统架构与工程结构
 
@@ -260,25 +260,25 @@ FloatAgent.Abstractions（接口类库，net10.0）
 
 ## 7. 已知问题与风险
 
-| 编号 | 风险/问题 | 影响 | 缓解措施 |
-|------|----------|------|---------|
-| R-01 | API Key 明文存储于 config.json | 凭据泄露风险 | 文档提示用户保管与轮换；后续可加密存储 |
-| R-02 | 长回复 Markdown 全篇重排 | 轻微渲染开销 | 已做 60ms 限流；必要时可切换"生成中纯文本、完成后 Markdown" |
-| R-03 | 用户消息暂不渲染 Markdown | 含 Markdown 语法的用户输入原样展示 | 蓝底气泡上 Markdown 样式观感差，待定方案 |
-| R-04 | IME 组合态 Enter 语义 | 中文输入首条 Enter 用于上屏（标准行为） | 已按主流产品惯例处理，文档明示 |
+| 编号   | 风险/问题                     | 影响                      | 缓解措施                                   |
+| ---- | ------------------------- | ----------------------- | -------------------------------------- |
+| R-01 | API Key 明文存储于 config.json | 凭据泄露风险                  | 文档提示用户保管与轮换；后续可加密存储                    |
+| R-02 | 长回复 Markdown 全篇重排         | 轻微渲染开销                  | 已做 60ms 限流；必要时可切换"生成中纯文本、完成后 Markdown" |
+| R-03 | 用户消息暂不渲染 Markdown         | 含 Markdown 语法的用户输入原样展示  | 蓝底气泡上 Markdown 样式观感差，待定方案              |
+| R-04 | IME 组合态 Enter 语义          | 中文输入首条 Enter 用于上屏（标准行为） | 已按主流产品惯例处理，文档明示                        |
 
 ## 8. 版本历史（需求迭代记录）
 
-| 版本节点 | 需求内容 |
-|---------|---------|
-| V0.1 骨架 | 悬浮球 + 点击弹出聊天窗（.NET 10 WPF，无边框置顶可拖拽） |
-| V0.2 框架 | 引入 CommunityToolkit.Mvvm 8.4.2、依赖注入 10.0.12 |
-| V0.3 对话 | 接入 DeepSeek 实现流式聊天 |
-| V0.4 Agent 化 | MAF 重构；Enter 发送/Shift+Enter 多行；配置窗（必填校验变红、config.json） |
-| V0.5 交互修复 | 测试连接按钮；字段清空标红；发送→停止按钮（参考图风格、图标居中） |
-| V0.6 配置增强 | 模型下拉框（4 个预置项）；发送按钮与标题栏风格统一 |
-| V0.7 渲染 | MdXaml 渲染；双方消息可复制；AI 消息工具栏（复制/token/模型） |
-| V0.8 尺寸与细节 | 窗口宽高 ×1.2、高度再 ×1.3（456×811）；AI 字体 Compact；细窄滚动条 |
-| V0.9 平台化 | Host.CreateApplicationBuilder 启动；skills 技能体系（grill-me/skill-creator/get-weather）；IAIToolService 工具注入（get_weather） |
-| V0.10 体验优化 | 滚轮缓动 + 流式跟随滚动 + 限流刷新；修复 Enter 不发送（TextBox 类处理器抢占问题） |
-| V1.0 工程化 | 拆分三工程：Floaticon 启动壳 / FloatAgent 类库 / FloatAgent.Abstractions 接口 |
+| 版本节点         | 需求内容                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| V0.1 骨架      | 悬浮球 + 点击弹出聊天窗（.NET 10 WPF，无边框置顶可拖拽）                                                                               |
+| V0.2 框架      | 引入 CommunityToolkit.Mvvm 8.4.2、依赖注入 10.0.12                                                                       |
+| V0.3 对话      | 接入 DeepSeek 实现流式聊天                                                                                                |
+| V0.4 Agent 化 | MAF 重构；Enter 发送/Shift+Enter 多行；配置窗（必填校验变红、config.json）                                                            |
+| V0.5 交互修复    | 测试连接按钮；字段清空标红；发送→停止按钮（参考图风格、图标居中）                                                                                 |
+| V0.6 配置增强    | 模型下拉框（4 个预置项）；发送按钮与标题栏风格统一                                                                                        |
+| V0.7 渲染      | MdXaml 渲染；双方消息可复制；AI 消息工具栏（复制/token/模型）                                                                           |
+| V0.8 尺寸与细节   | 窗口宽高 ×1.2、高度再 ×1.3（456×811）；AI 字体 Compact；细窄滚动条                                                                   |
+| V0.9 平台化     | Host.CreateApplicationBuilder 启动；skills 技能体系（grill-me/skill-creator/get-weather）；IAIToolService 工具注入（get_weather） |
+| V0.10 体验优化   | 滚轮缓动 + 流式跟随滚动 + 限流刷新；修复 Enter 不发送（TextBox 类处理器抢占问题）                                                               |
+| V1.0 工程化     | 拆分三工程：Floaticon 启动壳 / FloatAgent 类库 / FloatAgent.Abstractions 接口                                                  |

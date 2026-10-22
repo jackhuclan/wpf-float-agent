@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using FloatAgent.Abstractions;
+using Floaticon.Services;
+using Floaticon.Tools;
+using Floaticon.ViewModels;
+using Floaticon.Views;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace Floaticon;
+
+/// <summary>
+/// 启动壳：构建通用主机 → 注册服务 → Build/Start → 赋 ServiceLocator → 显示悬浮球。
+/// 只负责装配，不含任何业务逻辑（业务全部在 FloatAgent 类库）。
+/// </summary>
+public partial class App : Application
+{
+    private IHost? _host;
+
+    /// <summary>容器出口，供启动工程内部（如调试钩子）解析服务。</summary>
+    public static IServiceProvider Services =>
+        Current is App { _host: { } host }
+            ? host.Services
+            : throw new InvalidOperationException("应用主机尚未初始化。");
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+
+        // 把工作目录锚定到 exe 目录：JsonConfigService / SkillProviderFactory 会回退到 CWD，
+        // 这样无论双击、快捷方式还是命令行启动，config.json 都落在"运行目录"（FR-06）。
+        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            Args = e.Args,
+            // 配置相对路径（config.json、skills）以 exe 所在目录为基准
+            ContentRootPath = AppContext.BaseDirectory,
+        });
+
+        ConfigureServices(builder.Services);
+
+        _host = builder.Build();
+        _host.Start();
+
+        // 类库内的视图（ChatWindow 打开配置窗）通过 ServiceLocator 解析瞬时服务，
+        // 避免 FloatAgent 反向依赖启动工程。
+        ServiceLocator.Services = _host.Services;
+
+        RegisterTools(_host.Services);
+
+        _host.Services.GetRequiredService<FloatingBallWindow>().Show();
+    }
+
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        // 配置
+        services.AddSingleton<IConfigService, JsonConfigService>();
+        services.AddSingleton<IModelTester, OpenAIModelTester>();
+
+        // 工具与技能
+        services.AddSingleton<IAIToolService, AIToolService>();
+        services.AddSingleton<HttpClient>();
+        services.AddSingleton<WeatherTool>();
+        services.AddSingleton(sp => SkillProviderFactory.Create(sp.GetService<ILoggerFactory>()));
+
+        // 聊天（AgentChatService 每次请求按当前配置重建 Agent，配置保存即生效）
+        services.AddSingleton<IChatService, AgentChatService>();
+
+        // MVVM：ChatViewModel 为单例以保留历史消息；ConfigViewModel 每次打开配置窗新建
+        services.AddSingleton<ChatViewModel>();
+        services.AddTransient<ConfigViewModel>();
+
+        // 窗口：聊天窗需与悬浮球长期共存（隐藏而非销毁），配置窗关闭后不可复用故为 Transient
+        services.AddSingleton<ChatWindow>();
+        services.AddSingleton<FloatingBallWindow>();
+        services.AddTransient<ConfigWindow>();
+    }
+
+    /// <summary>把内置工具注册进工具表，Agent 会自动按需调用。</summary>
+    private static void RegisterTools(IServiceProvider services)
+    {
+        var registry = services.GetRequiredService<IAIToolService>();
+        var weather = services.GetRequiredService<WeatherTool>();
+
+        // 显式委托类型保住方法上的 [Description]，模型才能拿到参数说明
+        Func<string, string?, CancellationToken, Task<string>> getWeather = weather.GetWeatherAsync;
+        registry.AddTool(AIFunctionFactory.Create(getWeather, "get_weather"));
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        if (_host is { } host)
+        {
+            try
+            {
+                host.StopAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
+            }
+            catch (Exception)
+            {
+                // 退出阶段不再向上冒泡，避免关闭流程被阻断
+            }
+            finally
+            {
+                host.Dispose();
+                _host = null;
+            }
+        }
+
+        base.OnExit(e);
+    }
+}
