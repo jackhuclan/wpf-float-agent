@@ -9,6 +9,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         Topmost="True"
+        behaviors:TopmostKeeper.KeepTopmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize">
 

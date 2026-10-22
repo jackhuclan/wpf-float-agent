@@ -48,8 +48,6 @@ public partial class ConfigViewModel : ObservableObject
     /// <summary>保存成功（由窗口订阅后关闭对话框）。</summary>
     public event EventHandler? Saved;
 
-    public string ConfigPath => _configService.ConfigPath;
-
     public ConfigViewModel(IConfigService configService, IModelTester modelTester)
     {
         _configService = configService;

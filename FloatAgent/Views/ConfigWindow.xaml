@@ -1,6 +1,7 @@
 <Window x:Class="Floaticon.Views.ConfigWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:behaviors="clr-namespace:Floaticon.Views.Behaviors"
         Title="模型配置"
         Width="440" Height="500"
         WindowStyle="None"
@@ -8,6 +9,7 @@
         Background="Transparent"
         WindowStartupLocation="CenterOwner"
         Topmost="True"
+        behaviors:TopmostKeeper.KeepTopmost="True"
         ResizeMode="NoResize"
         ShowInTaskbar="False">
 
@@ -28,6 +30,16 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="10,8" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <!-- 密码输入：字符掩码显示 -->
+        <Style x:Key="FieldPasswordStyle" TargetType="PasswordBox">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="PasswordChar" Value="●" />
         </Style>
 
         <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
@@ -209,8 +221,8 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldTextStyle}" />
+                        <PasswordBox behaviors:PasswordBoxBinding.BoundPassword="{Binding ApiKey, Mode=TwoWay}"
+                                     Style="{StaticResource FieldPasswordStyle}" />
                     </Border>
                     <TextBlock Style="{StaticResource RequiredHintStyle}"
                                Visibility="{Binding ApiKeyError, Converter={StaticResource BoolToVis}}" />
@@ -218,7 +230,9 @@
                     <!-- 模型（下拉选择） -->
                     <TextBlock Text="模型" Style="{StaticResource FieldLabelStyle}" Margin="2,14,0,6" />
                     <ComboBox ItemsSource="{Binding ModelOptions}"
-                              SelectedItem="{Binding Model, Mode=TwoWay}">
+                              SelectedItem="{Binding Model, Mode=TwoWay}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch">
                         <ComboBox.Style>
                             <Style TargetType="ComboBox" BasedOn="{StaticResource ModelComboBoxStyle}">
                                 <Style.Triggers>
@@ -282,12 +296,6 @@
                         CornerRadius="0,0,16,16"
                         Padding="14,10">
                     <Grid>
-                        <TextBlock Text="{Binding ConfigPath}"
-                                   FontSize="10" Foreground="#9CA3AF"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"
-                                   Margin="2,0,110,0" />
-
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <!-- 测试连接 -->
                             <Button Width="88" Height="32"
