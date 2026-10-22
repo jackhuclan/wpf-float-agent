@@ -1,10 +1,9 @@
-using System;
 using System.Text.Json.Serialization;
 
 namespace Floaticon.Models;
 
 /// <summary>
-/// 模型配置：三项均必填。持久化到当前目录的 config.json。
+/// 模型配置：三项均必填。持久化到运行目录（exe 所在目录）的 config.json。
 /// </summary>
 public sealed class ModelConfig
 {
@@ -23,11 +22,14 @@ public sealed class ModelConfig
         !string.IsNullOrWhiteSpace(Model) &&
         !string.IsNullOrWhiteSpace(Endpoint);
 
-    /// <summary>首次运行（无 config.json）时的默认值。</summary>
+    /// <summary>
+    /// 首次运行（无 config.json）时的默认值。
+    /// 注意：API Key 属于敏感凭据，代码中不保留任何默认值，必须由用户在配置窗
+    /// 或 config.json 中填写；模型与端点只给定非敏感的预置值方便开箱使用。
+    /// </summary>
     public static ModelConfig CreateDefault() => new()
     {
-        ApiKey = Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY")
-                 ?? "sk-98956f4269244702aa321d4b3f4f57b7",
+        ApiKey = string.Empty,
         Model = "deepseek-chat",
         Endpoint = "https://api.deepseek.com/v1"
     };

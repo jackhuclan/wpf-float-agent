@@ -110,15 +110,18 @@ dotnet run --project Floaticon
 
 ### 配置模型
 
-首次使用需填入模型配置：点击聊天窗标题栏的 **⚙**，填写三项后点「测试连接」确认可用，再保存。
+API Key 只从 `config.json` 读取，**代码中不保留任何密钥**。首次启动时配置文件不存在，点开 **⚙** 后三个字段都会红框提示必填：
+
+- **推荐**：在配置窗里填写三项 → 点「测试连接」确认可用 → 保存。应用会把配置写入 exe 所在目录的 `config.json`。
+- **手动**：把 `config.example.json` 复制为 exe 同目录下的 `config.json` 并填入密钥，重启应用即可。
 
 | 字段 | 说明 | 示例 |
 | --- | --- | --- |
-| API Key | 端点密钥 | `sk-...` |
+| API Key | 端点密钥（必填，无默认值） | `sk-...` |
 | 模型 | 下拉选择，已有配置值不在列表时会自动补入 | `deepseek-chat` |
 | 接口地址 | OpenAI 兼容端点 | `https://api.deepseek.com/v1` |
 
-配置保存为**程序目录下的 `config.json`**（启动时已把工作目录锚定到 exe 所在目录）：
+配置保存为**运行目录下的 `config.json`**（启动时已把工作目录锚定到 exe 所在目录，故无论双击还是命令行启动都指向同一位置），结构见 `config.example.json`：
 
 ```json
 {
@@ -128,7 +131,7 @@ dotnet run --project Floaticon
 }
 ```
 
-> ⚠️ API Key 以明文存储，请勿把该文件提交到版本库。文件缺失或损坏时会回落默认配置，不阻塞启动。
+> ⚠️ `config.json` 已列入 `.gitignore`，API Key 以明文存储，请勿提交或分享该文件；仓库里只有不含真实密钥的 `config.example.json`。配置文件缺失或损坏时会回落默认值（API Key 为空），不阻塞启动，只需重新填写。
 
 ## 扩展指南
 
