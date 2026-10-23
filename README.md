@@ -203,7 +203,7 @@ registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 
 ## 相关文档
 
-- [产品需求文档 PRD v1.0](docs/Floaticon-PRD-v1.0.md) · [docx 版](docs/Floaticon-PRD-v1.0.docx)
+- [产品需求文档 PRD v1.1](docs/Floaticon-PRD-v1.1.md) · [docx 版（v1.0 存档）](docs/Floaticon-PRD-v1.0.docx)
 
 ## License
 

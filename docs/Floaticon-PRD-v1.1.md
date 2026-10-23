@@ -3,9 +3,10 @@
 | 项目   | 内容                                                            |
 | ---- | ------------------------------------------------------------- |
 | 产品名称 | Floaticon（桌面悬浮 AI 助手）                                         |
-| 文档版本 | V1.0                                                          |
+| 文档版本 | V1.1                                                          |
 | 文档状态 | 已发布（对应已实现版本）                                                  |
 | 编写日期 | 2026-10-22                                                    |
+| 更新日期 | 2026-10-23                                                    |
 | 目标平台 | Windows 10/11 桌面（.NET 10 WPF）                                 |
 | 关联工程 | Floaticon（启动壳）、FloatAgent（业务类库）、FloatAgent.Abstractions（接口类库） |
 
@@ -13,9 +14,9 @@
 
 Floaticon 是运行在 Windows 桌面右下角的常驻悬浮 AI 助手：以可拖拽悬浮球为唯一入口，点击弹出流式对话窗，内置 Markdown 渲染、token 统计与模型配置能力。
 
-产品在 Microsoft Agent Framework（MAF）之上构建了可扩展的 Agent 底座：技能以 skills 目录下的 SKILL.md 文件承载（首发 grill-me 方案拷问、skill-creator 技能创作、get-weather 天气规约），工具通过 IAIToolService 注册 C# 函数（首发 get_weather 实时天气查询），均由 Agent 自动调用。
+产品在 Microsoft Agent Framework（MAF）之上构建了可扩展的 Agent 底座：技能以 skills 目录下的 SKILL.md 文件承载（首发 grill-me 方案拷问、skill-creator 技能创作、get-weather 天气规约），工具通过 IAIToolService 注册 C# 函数（get_weather 实时天气查询、run_long_task 2 分钟长耗时任务），均由 Agent 自动调用；长耗时工具执行期间界面实时显示执行进度。
 
-本文档汇总产品自 V0.1 骨架至 V1.0 工程化的全部需求，含 9 项功能需求（FR-01～FR-09）、8 项非功能需求及验收标准，对应代码已全部实现并通过端到端验证。
+本文档汇总产品自 V0.1 骨架至 V1.1 的全部需求，含 10 项功能需求（FR-01～FR-10）、8 项非功能需求及验收标准，对应代码已全部实现并通过端到端验证。
 
 ## 1. 背景与目标
 
@@ -51,7 +52,7 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 | 术语          | 定义                                                                           |
 | ----------- | ---------------------------------------------------------------------------- |
-| 悬浮球         | 常驻桌面右下角的圆形 AI 入口图标，独立置顶无边框窗口                                                 |
+| 悬浮球         | 常驻桌面右下角的圆形 AI 入口图标，独立无边框窗口                                                 |
 | 流式回复        | 模型生成内容逐 token 推送并实时渲染，而非等待完整回复                                               |
 | MAF         | Microsoft Agent Framework（NuGet：Microsoft.Agents.AI 1.25.0），承载 Agent、技能与工具调用 |
 | SKILL.md    | 技能定义文件，YAML frontmatter（name/description）+ 正文指令                              |
@@ -67,7 +68,7 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 **需求描述**
 
-1. 应用启动后仅在桌面右下角显示悬浮球，聊天窗按需弹出；悬浮球为独立窗口：置顶（Topmost）、无边框、透明背景、不占用任务栏。
+1. 应用启动后仅在桌面右下角显示悬浮球，聊天窗按需弹出；悬浮球为独立窗口：无边框、透明背景、不占用任务栏（普通窗口层级，不强制置顶——多窗口互抢置顶位会导致周期性闪烁，V1.1 移除）。
 2. 悬浮球直径 60 DIP（窗口 72×72），定位在工作区右下角（距边缘 24 DIP），始终可见。
 3. 支持鼠标左键拖拽移动；拖拽结束若位移 ≤4 DIP 判定为"点击"，>4 DIP 判定为"拖拽"。
 4. 单击悬浮球切换聊天窗显示/隐藏；弹出时球体播放弹性缩放动画（0.85→1.0，180ms，BackEase）。
@@ -76,7 +77,7 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 **验收标准**
 
-- [ ] 启动后仅见悬浮球，任务栏无入口；置顶于所有普通窗口之上。
+- [ ] 启动后仅见悬浮球，任务栏无入口。
 - [ ] 拖拽后松开不触发聊天窗；原地单击正常切换聊天窗。
 - [ ] 右键菜单两项功能可用；退出后进程结束、资源释放。
 
@@ -146,17 +147,19 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 **需求描述**
 
-1. 标题栏 ⚙ 打开模态配置窗（440×500，Topmost，圆角风格与主窗一致）。
-2. 三个必填字段：API Key（密码态输入）、模型（下拉框，预置 `qwen3:1.7b`、`qwen3:8b`、`deepseek-flash`、`deepseek-v4-pro`；已有配置值不在列表中时自动补入首项）、接口地址（OpenAI 兼容端点，如 `https://api.deepseek.com/v1`）。
+1. 标题栏 ⚙ 打开模态配置窗（440×500，普通窗口层级，圆角风格与主窗一致）。
+2. 三个必填字段：API Key（PasswordBox 掩码输入，字符不可见）、模型（下拉框，预置 `qwen3:1.7b`、`qwen3:8b`、`deepseek-flash`、`deepseek-v4-pro`；已有配置值不在列表中时自动补入首项）、接口地址（OpenAI 兼容端点，如 `https://api.deepseek.com/v1`）。
 3. 实时校验：任一必填字段清空立即标红（边框 #EF4444，1.5px），输入后立即恢复；接口地址保存前校验必须为合法 http/https URL。
 4. **测试连接**按钮：用当前表单值（允许未保存）发一次真实小请求，明确区分三种结果——成功、鉴权失败（401 类）、不可达，并以醒目文案展示。
-5. 保存写入运行目录 `config.json`，**立即生效**（每次请求按当前配置重建 Agent，无需重启）；保存成功后自动关闭窗口。
-6. 配置文件缺失或损坏时回落默认配置，不阻塞启动。
+5. **测试连接进行中，保存按钮进入禁用态并有可辨识的禁用外观（淡靛蓝 #C7CDF4），结果返回后立即恢复可用**；配置窗底部不展示配置文件路径。
+6. 保存写入运行目录 `config.json`，**立即生效**（每次请求按当前配置重建 Agent，无需重启）；保存成功后自动关闭窗口。
+7. 配置文件缺失或损坏时回落默认配置，不阻塞启动；代码内不保留任何 API Key 默认值，密钥仅从 `config.json` 读取。
 
 **验收标准**
 
 - [ ] 三字段清空全部标红；填回后红色即时消失。
 - [ ] 测试连接对错误 Key/错误地址给出明确区分的提示。
+- [ ] 测试连接进行中保存按钮呈可辨识的禁用外观，返回后恢复可用。
 - [ ] 修改模型后立即发消息使用新模型（AI 工具栏模型名可验证）。
 
 ### FR-07 技能系统 Skills（P1）
@@ -193,12 +196,35 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
    - 流程：地理编码 → 实时天气 + 未来三天预报；
    - 输出：中文结构化文本（实时温度/体感/湿度/风速/降水 + 逐日天气、区间温度、降水概率），WMO 天气代码映射为中文描述，末尾标注数据来源；
    - 失败处理：城市未找到、网络异常、解析异常均返回可读中文错误信息，不向模型抛异常。
-4. Agent 具备多轮工具调用能力：一次用户提问可触发"调用工具 → 拿结果 → 继续生成"的完整链路。
+4. 第二个内置工具 **run_long_task**（长耗时任务，验证工具长时间占用场景）：
+   - 输入：任务名称 `task`（模型可见参数说明）；
+   - 行为：固定执行 **120 秒**，按 1 秒切片等待（点"停止"可在 1 秒内响应取消）；
+   - 输出：任务名、状态、起止时间、实际耗时、任务编号的结构化 Markdown；
+   - 执行期间通过 ToolProgressService 实时上报进度（见 FR-10）。
+5. Agent 具备多轮工具调用能力：一次用户提问可触发"调用工具 → 拿结果 → 继续生成"的完整链路；工具执行数分钟后仍能正常续答。
 
 **验收标准**
 
 - [ ] 提问"上海今天要带伞吗"返回真实天气数据（与 Open-Meteo 一致）。
+- [ ] 调用 run_long_task 后界面实时显示执行进度，120 秒后模型基于工具返回结果正常续答。
+- [ ] 长任务执行中点击"停止"，1 秒内中止并提示"（已停止生成）"。
 - [ ] 工具调用失败时用户收到可读的失败说明而非报错堆栈。
+
+### FR-10 工具执行进度反馈（P1）
+
+**需求描述**
+
+1. 工具在 Agent 流式管道内同步执行，执行期间 `StreamChunk` 零输出；长耗时工具不得让界面长时间停留在"只有三个跳动圆点"的零反馈状态。
+2. 提供 `ToolProgressService`（DI 单例）作为进度广播通道：工具执行期间调用 `Report(文本)` 上报，与主流式链路互不阻塞。
+3. 进度文本经 ChatViewModel 调度回 UI 线程后，显示在"正在输入"占位气泡下方（小字号灰色文本）；无进度时不占位，首块正文到达后立即清除。
+4. 上报节奏由工具自定：run_long_task 为开始 1 次、执行中每 5 秒 1 次（`⚡ run_long_task 执行中… N / 120 秒`）、结束 1 次。
+5. 进度更新不得抢焦点、不得影响窗口位置与流式渲染。
+
+**验收标准**
+
+- [ ] 调用 run_long_task 期间，气泡下方每 5 秒更新一次执行进度（含已耗时与总时长）。
+- [ ] 工具返回后正文正常流出，进度文本消失，不残留占位样式。
+- [ ] 长任务执行中可随时点"停止"，取消在 1 秒内生效。
 
 ### FR-09 滚动与流畅性体验（P1）
 
@@ -225,7 +251,7 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 | NFR-04 | 可扩展性 | 新增工具：实现 AIFunction 并注册到 IAIToolService；新增技能：添加 skills 子目录；均不需改动聊天核心链路                                                                                                                                          |
 | NFR-05 | 可靠性  | 配置缺失/损坏回落默认值；所有用户可见失败以气泡内可读文案呈现；剪贴板、网络异常均有兜底，不允许未处理异常崩溃                                                                                                                                                        |
 | NFR-06 | 性能   | 流式渲染限流 60ms；滚轮动画 15ms/帧；技能按需加载（渐进披露）控制上下文开销                                                                                                                                                                    |
-| NFR-07 | 安全   | API Key 明文保存于本地 config.json（需提示用户注意保管/轮换）；不执行技能脚本，资源读取限定白名单扩展名                                                                                                                                                 |
+| NFR-07 | 安全   | API Key 明文保存于本地 config.json（需提示用户注意保管/轮换）；**代码内不保留任何密钥默认值，密钥仅从运行目录 config.json 读取**；config.json 已加入 .gitignore，仓库提供无密钥模板 config.example.json；配置窗 API Key 以掩码显示；不执行技能脚本，资源读取限定白名单扩展名                                                              |
 | NFR-08 | 兼容   | 支持任意 OpenAI 兼容端点（DeepSeek、本地 Ollama qwen 系列等），不锁定供应商                                                                                                                                                           |
 
 ## 6. 系统架构与工程结构
@@ -240,8 +266,9 @@ Floaticon（启动壳，WinExe）
         ▼
 FloatAgent（业务类库，net10.0-windows + UseWPF）
   ├─ Services/：AgentChatService（MAF 流式对话）、SkillProviderFactory（技能加载）、
-  │             AIToolService（工具注册表）、JsonConfigService、OpenAIModelTester、ServiceLocator
-  ├─ Tools/：WeatherTool（get_weather，Open-Meteo）
+  │             AIToolService（工具注册表）、ToolProgressService（工具进度广播）、
+  │             JsonConfigService、OpenAIModelTester、ServiceLocator
+  ├─ Tools/：WeatherTool（get_weather，Open-Meteo）、LongRunningTool（run_long_task，2 分钟长耗时）
   ├─ ViewModels/：ChatViewModel、ConfigViewModel、ChatMessage
   ├─ Views/：FloatingBallWindow、ChatWindow、ConfigWindow、Behaviors/SmoothScrollBehavior
   ├─ Models/：ChatTurn、TokenUsage、ModelConfig
@@ -256,7 +283,8 @@ FloatAgent.Abstractions（接口类库，net10.0）
 
 1. **发送链路**：ChatViewModel → IChatService.StreamReplyAsync → AgentChatService（按配置建 Agent：ChatClientAgentOptions 挂 Instructions/Tools/AIContextProviders[技能]）→ MAF RunStreamingAsync → StreamChunk(Text/Usage) → 气泡增量渲染。
 2. **工具调用链路**：模型输出 function_call → MAF 自动执行 AIFunction → 结果回传模型 → 二次生成；各次用量累加后统一回填。
-3. **配置链路**：ConfigViewModel → JsonConfigService.Save(config.json) → 内存 Current 立即更新 → 下次请求生效。
+3. **工具进度旁路**：工具内 ToolProgressService.Report → ChatViewModel（Dispatcher 调度回 UI 线程）→ ChatMessage.Status → "正在输入"气泡下方实时刷新；首块正文到达即清除；与主流式链路互不阻塞。
+4. **配置链路**：ConfigViewModel → JsonConfigService.Save(config.json) → 内存 Current 立即更新 → 下次请求生效。
 
 ## 7. 已知问题与风险
 
@@ -282,3 +310,4 @@ FloatAgent.Abstractions（接口类库，net10.0）
 | V0.9 平台化     | Host.CreateApplicationBuilder 启动；skills 技能体系（grill-me/skill-creator/get-weather）；IAIToolService 工具注入（get_weather） |
 | V0.10 体验优化   | 滚轮缓动 + 流式跟随滚动 + 限流刷新；修复 Enter 不发送（TextBox 类处理器抢占问题）                                                               |
 | V1.0 工程化     | 拆分三工程：Floaticon 启动壳 / FloatAgent 类库 / FloatAgent.Abstractions 接口                                                  |
+| V1.1 长任务与安全 | 新增 run_long_task 长耗时工具（固定 2 分钟、可取消）与新 FR-10 工具执行进度反馈（气泡内实时显示 N/120 秒）；移除全部窗口强制置顶；API Key 改为掩码输入、仅从 config.json 读取（代码零硬编码，新增 config.example.json 模板并忽略 config.json）；测试连接期间保存按钮禁用态可视化；配置窗底部移除路径展示 |
