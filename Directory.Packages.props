@@ -19,6 +19,7 @@
   <ItemGroup Label="Agent 框架">
     <PackageVersion Include="Microsoft.Agents.AI" Version="1.25.0" />
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.25.0" />
+    <PackageVersion Include="Microsoft.Agents.AI.Tools.Shell" Version="1.25.0-preview.261014.1" />
   </ItemGroup>
 
   <ItemGroup Label="通用主机与抽象">

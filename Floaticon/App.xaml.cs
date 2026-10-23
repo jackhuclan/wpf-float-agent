@@ -105,6 +105,22 @@ public partial class App : Application
         Func<CancellationToken, Task<string>> runThirdparty = periodic.RunAsync;
         registry.AddTool(AIFunctionFactory.Create(
             runThirdparty, "thirdparty_long_run_task", "执行一个模拟的第三方长时间运行任务（约 15 秒，内部无法上报进度，由包装器周期上报执行进度）。当用户要求验证第三方长任务、或询问 PeriodicProgressService 的效果时调用。"));
+
+        // 验证 ContainerCodeTool：在一次性 Linux 容器中执行一段演示 C# 代码
+        //（构造函数传内联代码文本；也支持传脚本路径，按扩展名自动识别语言）。
+        var containerDemo = new ContainerCodeTool(
+            progressService,
+            """
+            using System;
+
+            Console.WriteLine($"Hello from Linux container! .NET {Environment.Version}");
+            Console.WriteLine($"OS: {Environment.OSVersion}");
+            Console.WriteLine($"Machine: {Environment.MachineName}");
+            """,
+            language: "csharp");
+        Func<CancellationToken, Task<string>> runContainerCode = containerDemo.RunAsync;
+        registry.AddTool(AIFunctionFactory.Create(
+            runContainerCode, "run_container_code", "在一次性 Linux 容器中执行一段演示 C# 代码并返回标准输出/错误/退出码（宿主机无需 .NET 运行时）。当用户要求验证容器内代码执行、或询问 ContainerCodeTool / DockerShellExecutor 的效果时调用。首次运行需要拉取镜像，可能耗时数分钟。"));
     }
 
     /// <summary>模拟的第三方长耗时任务：约 15 秒，内部没有任何进度上报能力。</summary>

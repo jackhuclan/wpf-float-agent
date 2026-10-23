@@ -2,4 +2,16 @@
   <Project Path="FloatAgent.Abstractions/FloatAgent.Abstractions.csproj" />
   <Project Path="FloatAgent/FloatAgent.csproj" />
   <Project Path="Floaticon/Floaticon.csproj" />
+  <Folder Name="/Solution Items/">
+    <File Path="AGENTS.md" />
+    <File Path="README.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="build.cmd" />
+    <File Path="build.ps1" />
+    <File Path="config.example.json" />
+    <File Path="docs/Floaticon-PRD-v1.1.md" />
+    <File Path="docs/Floaticon-PRD-v1.0.docx" />
+    <File Path="output/prd-floaticon-20261022/pipeline-state.yaml" />
+  </Folder>
 </Solution>

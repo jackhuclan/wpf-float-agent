@@ -206,6 +206,15 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
    - 执行期间通过 ToolProgressService 实时上报进度（见 FR-10）。
 5. Agent 具备多轮工具调用能力：一次用户提问可触发"调用工具 → 拿结果 → 继续生成"的完整链路；工具执行数分钟后仍能正常续答。
 6. 第三个内置工具 **thirdparty_long_run_task**（模拟第三方长任务，验证 PeriodicProgressService）：模拟一个内部无法上报进度的第三方任务（约 15 秒），由包装器在等待侧周期上报进度（见 FR-10 需求 6），结束后返回结构化执行结果；注册代码位于启动壳 `RegisterTools`，作为接入真实第三方长任务的参考模板。
+7. 第四个内置工具 **run_container_code**（容器内代码执行，基于 NuGet 包 `Microsoft.Agents.AI.Tools.Shell` 的 `DockerShellExecutor`）：
+   - 由 `ContainerCodeTool` 承载，在一次性 Linux 容器（Docker）中执行 C# / Python / JavaScript 代码，宿主机无需安装任何运行时；
+   - 脚本经构造函数传入，**支持两种形式**：脚本文件路径（按扩展名识别语言）或内联代码文本（按内容特征识别，也可显式指定 `language` 参数）；
+   - 语言与镜像映射：C# → `dotnet/sdk:10.0`（容器内生成离线可 restore 的迷你 console 工程执行）、Python → `python:3.12-slim`、JavaScript → `node:22-slim`；
+   - 隔离与安全：每次执行创建一次性容器（执行完即销毁），默认网络隔离（`none`）、1 GiB 内存上限、180 秒超时；
+   - 代码以 base64 写入容器文件系统后执行，规避引号/换行等 shell 转义问题；C# 经 `dotnet build` + `dotnet exec` 加载 dll（绕开非 root 用户 apphost 的 exec 权限问题），全程不访问网络；
+   - 执行期间通过 ToolProgressService 周期上报进度（开始 1 次 + 每 5 秒 1 次 + 完成 1 次），首次运行含镜像拉取时界面不零反馈；
+   - 输出：状态（成功/失败 + 退出码）、语言、来源、起止时间与耗时、标准输出、标准错误的结构化 Markdown；
+   - Docker 不可用 / 安全策略拒绝时返回可读中文错误，不向模型抛异常。
 
 **验收标准**
 
@@ -213,6 +222,7 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 - [ ] 调用 run_long_task 后界面实时显示执行进度，120 秒后模型基于工具返回结果正常续答。
 - [ ] 长任务执行中点击"停止"，1 秒内中止并提示"（已停止生成）"。
 - [ ] 工具调用失败时用户收到可读的失败说明而非报错堆栈。
+- [ ] 请求验证容器执行时自动调用 run_container_code，在 Linux 容器中执行演示 C# 代码并返回标准输出/退出码；首次运行拉取镜像期间界面有周期进度反馈。
 
 ### FR-10 工具执行进度反馈（P1）
 

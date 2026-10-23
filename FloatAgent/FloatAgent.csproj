@@ -13,6 +13,7 @@
     <PackageReference Include="MdXaml" />
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="Microsoft.Agents.AI.OpenAI" />
+    <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
   </ItemGroup>
 
   <ItemGroup>

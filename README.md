@@ -24,7 +24,7 @@
 | 消息工具栏 | 每条 AI 回复下方显示 复制按钮 / `◇ 共消耗 N tokens` / `⚡ 模型名`（工具调用多次往返时用量累加） |
 | 模型配置 | 三字段表单 + 实时必填校验 + **测试连接**（明确区分成功 / 鉴权失败 / 不可达）；保存即生效，无需重启 |
 | 技能系统 | `skills/` 目录下的 `SKILL.md` 自动加载，模型按需 `load_skill`（渐进式披露） |
-| 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task`） |
+| 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task` / `run_container_code`） |
 | 滚动体验 | 6px 细滚动条、像素滚动、滚轮 170ms ease-out 缓动、流式期间智能跟随底部 |
 | 工具进度反馈 | 长耗时工具执行期间实时上报进度（如 `⚡ run_long_task 执行中… 60 / 120 秒`），显示在“正在输入”气泡下方，不再干等 |
 | 多屏适配 | PerMonitorV2 DPI 感知，弹窗位置夹取到当前工作区内 |
@@ -80,6 +80,7 @@ wpf-float-agent/
 │  │                             # OpenAIModelTester、SkillProviderFactory、ServiceLocator
 │  ├─ Tools/                     # WeatherTool（get_weather，Open-Meteo）
 │  │                             # LongRunningTool（run_long_task，2 分钟长耗时）
+│  │                             # ContainerCodeTool（run_container_code，Linux 容器执行 C#/Python/JS）
 │  ├─ ViewModels/                # ChatViewModel、ConfigViewModel、ChatMessage
 │  ├─ Views/                     # FloatingBallWindow、ChatWindow、ConfigWindow
 │  │  └─ Behaviors/              # SmoothScrollBehavior（滚轮缓动）
@@ -87,6 +88,10 @@ wpf-float-agent/
 ├─ FloatAgent.Abstractions/      # IAIToolService
 ├─ docs/                         # PRD（md + docx）
 ├─ output/                       # PRD 生成链路中间产物
+├─ Directory.Build.props         # 全解决方案共享元数据（版本/作者/项目地址/描述）
+├─ Directory.Packages.props      # NuGet 中央包版本管理
+├─ build.cmd / build.ps1         # 一键 Release 构建 + NuGet 打包（产物 → release\ / artifacts\）
+├─ AGENTS.md / .editorconfig     # 项目规范与代码风格
 └─ Floaticon.slnx
 ```
 
@@ -109,6 +114,28 @@ dotnet run --project Floaticon
 ```
 
 启动后桌面右下角出现悬浮球，**单击**弹出聊天窗，**右键**可打开聊天或退出。
+
+### 构建与打包
+
+仓库根目录提供一键构建脚本（`build.cmd` 是 `build.ps1` 的命令行入口，参数原样透传）：
+
+```bat
+:: Release 编译整个解决方案，产物输出到根目录 release\（含 Floaticon.exe）
+build.cmd
+
+:: 打包 NuGet 包（FloatAgent、FloatAgent.Abstractions），输出到根目录 artifacts\
+build.cmd -Pack
+
+:: 带版本后缀打包（生成 FloatAgent.1.1.0-preview.nupkg）
+build.cmd -Pack -VersionSuffix preview
+
+:: 先清理 release\ / artifacts\ 再编译
+build.cmd -Clean
+```
+
+版本号、作者、项目地址、描述等工程元数据统一在根目录 `Directory.Build.props` 中维护（自动导入全部 .csproj），发版只改一处。
+
+> 说明：`FloatAgent` 依赖的 MdXaml（2.0.0-pre）与 Microsoft.Agents.AI.Tools.Shell（1.25.0-preview）为预发布包，打稳定版 NuGet 包时会出现 NU5104 提示，不影响包的生成与使用。
 
 ### 配置模型
 
@@ -197,6 +224,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 | `get_weather` | 工具 | Open-Meteo 实时天气 + 未来三天预报（无需 API Key），WMO 代码映射中文描述 |
 | `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消、每 5 秒上报执行进度，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
 | `thirdparty_long_run_task` | 工具 | 模拟第三方长任务（约 15 秒，内部无法上报进度）：由 `PeriodicProgressService` 在等待侧周期上报进度，返回执行结果；验证第三方方法的进度包装链路 |
+| `run_container_code` | 工具 | 基于 `Microsoft.Agents.AI.Tools.Shell` 的 `DockerShellExecutor`，在一次性 Linux 容器中执行 C# / Python / JavaScript 代码（宿主机无需运行时）：脚本支持路径或内联代码、base64 写入后执行、网络隔离 + 1 GiB 内存上限 + 180 秒超时、每 5 秒上报进度；C# 在容器内生成离线可 restore 的迷你工程编译执行（不访问网络）；首次运行需拉取镜像 |
 
 ## 技术栈
 
