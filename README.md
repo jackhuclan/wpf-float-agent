@@ -173,6 +173,20 @@ registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 
 > 长耗时工具建议注入 `ToolProgressService`（DI 单例）并周期性 `Report("…")`，进度会实时显示在“正在输入”气泡下方，避免长时间零反馈。参考 `LongRunningTool` 的实现。
 
+**包装无法修改的第三方长耗时方法**：第三方代码内部不能上报进度时，用 `PeriodicProgressService` 在等待侧代报（开始 1 次 → 每 5 秒 1 次 → 完成 1 次），第三方代码零改动：
+
+```csharp
+// App.xaml.cs 的 RegisterTools 中（progressService 从容器解析 ToolProgressService）
+var periodic = new PeriodicProgressService(
+    progressService, "thirdparty_long_run_task", ThirdPartyLib.LongRunAsync);
+
+// RunAsync 只剩 CancellationToken 一个参数；用方法组注册，别用 lambda（会丢失取消接线）
+Func<CancellationToken, Task<string>> run = periodic.RunAsync;
+registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第三方的长时间运行任务"));
+```
+
+支持四种第三方形态：`Func<CancellationToken, Task>`、`Func<Task>`、`Action`（线程池执行）、`Func<CancellationToken, Task<string>>`（返回值附在完成汇报里）。第三方抛异常会转为可读的失败结果文本，点“停止”仍可在周期间隔内取消。
+
 ## 内置技能与工具
 
 | 名称 | 类型 | 用途 |
