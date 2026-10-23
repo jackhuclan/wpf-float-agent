@@ -64,11 +64,13 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBoxItem">
                         <Border x:Name="ItemBorder"
-                                CornerRadius="6"
-                                Margin="4,2"
-                                Padding="{TemplateBinding Padding}"
-                                Background="Transparent">
-                            <ContentPresenter />
+                            CornerRadius="6"
+                            Margin="4,2"
+                            Padding="{TemplateBinding Padding}"
+                            Background="Transparent"
+                            HorizontalAlignment="Stretch">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
@@ -89,22 +91,28 @@
             <Setter Property="Background" Value="#FFFFFF" />
             <Setter Property="BorderBrush" Value="#D1D5DB" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="ItemContainerStyle" Value="{StaticResource ModelItemStyle}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
                         <Grid>
                             <ToggleButton x:Name="ToggleButton"
-                                          Focusable="False"
-                                          ClickMode="Press"
-                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                  HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                  Focusable="False"
+                                  ClickMode="Press"
+                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
                                         <Border x:Name="FieldBorder"
-                                                CornerRadius="8"
-                                                Background="#FFFFFF"
-                                                BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}">
+                                        CornerRadius="8"
+                                        Background="#FFFFFF"
+                                        BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                        BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
@@ -112,16 +120,20 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <ContentPresenter Grid.Column="0"
-                                                                  Margin="10,0,0,0"
-                                                                  VerticalAlignment="Center"
-                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
+                                                          Margin="10,0,8,0"
+                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                          Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                          ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                          ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                          ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
 
                                                 <Path Grid.Column="1"
-                                                      Data="M 0,0 L 4.5,4.5 L 9,0"
-                                                      Stroke="#6B7280"
-                                                      StrokeThickness="1.5"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,0,12,0" />
+                                              Data="M 0,0 L 4.5,4.5 L 9,0"
+                                              Stroke="#6B7280"
+                                              StrokeThickness="1.5"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,12,0" />
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
@@ -134,21 +146,23 @@
                             </ToggleButton>
 
                             <Popup x:Name="PART_Popup"
-                                   Placement="Bottom"
-                                   IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   PopupAnimation="Fade">
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Fade">
                                 <Border Background="#FFFFFF"
-                                        CornerRadius="8"
-                                        BorderBrush="#E5E7EB"
-                                        BorderThickness="1"
-                                        Margin="0,4,0,0"
-                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                                CornerRadius="8"
+                                BorderBrush="#E5E7EB"
+                                BorderThickness="1"
+                                Margin="0,4,0,0"
+                                MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
                                     <Border.Effect>
                                         <DropShadowEffect Color="#1F2937" BlurRadius="16" ShadowDepth="3" Opacity="0.18" />
                                     </Border.Effect>
-                                    <ScrollViewer MaxHeight="190">
+                                    <ScrollViewer MaxHeight="190"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
                                         <ItemsPresenter />
                                     </ScrollViewer>
                                 </Border>
@@ -381,6 +395,12 @@
                                             </Trigger>
                                             <Trigger Property="IsPressed" Value="True">
                                                 <Setter TargetName="SaveBorder" Property="Background" Value="#3446B8" />
+                                            </Trigger>
+                                            <!-- 测试连接进行中：命令被禁用，视觉上也要明确表达 -->
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter TargetName="SaveBorder" Property="Background" Value="#C7CDF4" />
+                                                <Setter Property="Foreground" Value="#EFF1FD" />
+                                                <Setter Property="Cursor" Value="Arrow" />
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>

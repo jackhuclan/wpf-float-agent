@@ -1,6 +1,7 @@
-using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Floaticon.Models;
@@ -28,7 +29,7 @@ public partial class ConfigViewModel : ObservableObject
     {
         "qwen3:1.7b",
         "qwen3:8b",
-        "deepseek-flash",
+        "deepseek-v4.1-flash",
         "deepseek-v4-pro"
     };
 
