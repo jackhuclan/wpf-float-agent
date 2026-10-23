@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Floaticon.Models;
 
 namespace Floaticon.Services;

@@ -1,0 +1,29 @@
+<Project>
+
+  <!-- 集中包管理（Central Package Management）：所有 NuGet 包版本统一在此维护，
+       各 csproj 中的 PackageReference 只写 Include 不写 Version。
+       详见 https://learn.microsoft.com/nuget/consume-packages/central-package-management -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+    <!-- 集中管理下不允许 csproj 内再写版本号，避免双源 -->
+    <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="MVVM 与渲染">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="MdXaml" Version="2.0.0-pre202603081301" />
+  </ItemGroup>
+
+  <ItemGroup Label="Agent 框架">
+    <PackageVersion Include="Microsoft.Agents.AI" Version="1.25.0" />
+    <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.25.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="通用主机与抽象">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.10.1" />
+  </ItemGroup>
+
+</Project>

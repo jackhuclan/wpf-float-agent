@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using FloatAgent.Abstractions;
 using Floaticon.Services;
 using Floaticon.Tools;
 using Floaticon.ViewModels;
 using Floaticon.Views;
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

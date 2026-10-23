@@ -7,6 +7,7 @@ root = true
 # A newline ending every file
 # Use 4 spaces as indentation
 [*]
+charset = utf-8
 insert_final_newline = true
 indent_style = space
 indent_size = 4
@@ -71,15 +72,13 @@ dotnet_naming_symbols.constant_fields.applicable_kinds   = field
 dotnet_naming_symbols.constant_fields.required_modifiers = const
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 
-# static fields should have s_ prefix
-dotnet_naming_rule.static_fields_should_have_prefix.severity = suggestion
-dotnet_naming_rule.static_fields_should_have_prefix.symbols  = static_fields
-dotnet_naming_rule.static_fields_should_have_prefix.style = static_prefix_style
+# static fields：与实例字段一致，使用 _camelCase（本仓库约定，不用 s_ 前缀）
+dotnet_naming_rule.static_fields_underscore_camel.severity = suggestion
+dotnet_naming_rule.static_fields_underscore_camel.symbols  = static_fields
+dotnet_naming_rule.static_fields_underscore_camel.style = camel_case_underscore_style
 dotnet_naming_symbols.static_fields.applicable_kinds   = field
 dotnet_naming_symbols.static_fields.required_modifiers = static
 dotnet_naming_symbols.static_fields.applicable_accessibilities = private, internal, private_protected
-dotnet_naming_style.static_prefix_style.required_prefix = s_
-dotnet_naming_style.static_prefix_style.capitalization = camel_case
 
 # internal and private fields should be _camelCase
 dotnet_naming_rule.camel_case_for_private_internal_fields.severity = suggestion
@@ -106,7 +105,7 @@ dotnet_style_object_initializer = true:suggestion
 dotnet_style_collection_initializer = true:suggestion
 dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_coalesce_expression = true:suggestion
-dotnet_style_null_propagation = false:suggestion   # Turning off given new warnings that came with the new analyzers and we don't want to take the risk of changing those now
+dotnet_style_null_propagation = true:suggestion
 dotnet_style_prefer_compound_assignment = false:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
 dotnet_style_prefer_inferred_tuple_names = true:suggestion
@@ -164,8 +163,6 @@ csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
-# License header
-file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.
 csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_top_level_statements = true:silent
@@ -207,3 +204,19 @@ end_of_line = lf
 [*.{cmd,bat}]
 end_of_line = crlf
 
+
+# ---------- 分析器严重级别 ----------
+# 未使用的 using（IDE0005；需项目启用 GenerateDocumentationFile 才能完整检测）
+dotnet_diagnostic.IDE0005.severity = suggestion
+# 文件作用域命名空间
+dotnet_diagnostic.IDE0130.severity = suggestion
+# 未使用的局部变量/字段赋值
+dotnet_diagnostic.CS0219.severity = warning
+dotnet_diagnostic.CS0168.severity = warning
+# 与本仓库风格冲突或噪声过大的规则
+dotnet_diagnostic.CA1050.severity = none
+dotnet_diagnostic.CA1812.severity = none
+
+# AssemblyInfo 为生成代码，不做 using 清理
+[*{_AssemblyInfo.cs}]
+dotnet_diagnostic.IDE0005.severity = none
