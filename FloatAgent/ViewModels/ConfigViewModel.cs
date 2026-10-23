@@ -36,7 +36,11 @@ public partial class ConfigViewModel : ObservableObject
     [ObservableProperty] private bool _ModelError;
     [ObservableProperty] private bool _endpointError;
 
-    [ObservableProperty] private bool _isTesting;
+    /// <summary>测试连接进行中：期间禁用「测试连接」与「保存」，结束后必须重新求值，否则按钮会一直灰着。</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [NotifyCanExecuteChangedFor(nameof(TestConnectionCommand))]
+    private bool _isTesting;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -158,6 +162,8 @@ public partial class ConfigViewModel : ObservableObject
         }
         finally
         {
+            // 先落 IsTesting 再让命令重新求值：若反过来（先改结果文本、后清 IsTesting），
+            // 保存按钮会停在"测试中禁用"的那次求值结果上，永远点不动。
             IsTesting = false;
         }
     }

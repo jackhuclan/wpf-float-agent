@@ -8,9 +8,6 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        Topmost="True"
-        behaviors:TopmostKeeper.KeepTopmost="True"
-        behaviors:TopmostKeeper.Layer="1"
         ShowInTaskbar="False"
         ResizeMode="NoResize">
 
