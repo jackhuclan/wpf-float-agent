@@ -201,10 +201,34 @@
                         Padding="12,10"
                         Margin="0,0,40,0"
                         Visibility="Collapsed">
-                    <StackPanel Orientation="Horizontal" Height="10">
-                        <Ellipse Width="7" Height="7" Fill="#9CA3AF" Margin="0,0,4,0" />
-                        <Ellipse Width="7" Height="7" Fill="#9CA3AF" Margin="0,0,4,0" />
-                        <Ellipse Width="7" Height="7" Fill="#9CA3AF" />
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Height="10">
+                            <Ellipse Width="7" Height="7" Fill="#9CA3AF" Margin="0,0,4,0" />
+                            <Ellipse Width="7" Height="7" Fill="#9CA3AF" Margin="0,0,4,0" />
+                            <Ellipse Width="7" Height="7" Fill="#9CA3AF" />
+                        </StackPanel>
+                        <!-- 工具执行进度等附加状态（无状态时不占位） -->
+                        <TextBlock x:Name="TypingStatus"
+                                   Text="{Binding Status}"
+                                   FontSize="11"
+                                   Foreground="#6B7280"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="320"
+                                   Margin="0,7,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
                 </Border>
 

@@ -21,6 +21,13 @@ public partial class ChatMessage : ObservableObject
     [ObservableProperty]
     private bool _isTyping;
 
+    /// <summary>
+    /// 生成期间的附加状态（如长耗时工具的执行进度），显示在“正在输入”气泡下方；
+    /// 无状态时为 null（不占位）。
+    /// </summary>
+    [ObservableProperty]
+    private string? _status;
+
     /// <summary>本次回复的 token 用量（仅 AI 消息，流结束后回填）。</summary>
     [ObservableProperty]
     private TokenUsage? _usage;

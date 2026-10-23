@@ -26,6 +26,7 @@
 | 技能系统 | `skills/` 目录下的 `SKILL.md` 自动加载，模型按需 `load_skill`（渐进式披露） |
 | 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task`） |
 | 滚动体验 | 6px 细滚动条、像素滚动、滚轮 170ms ease-out 缓动、流式期间智能跟随底部 |
+| 工具进度反馈 | 长耗时工具执行期间实时上报进度（如 `⚡ run_long_task 执行中… 60 / 120 秒`），显示在“正在输入”气泡下方，不再干等 |
 | 多屏适配 | PerMonitorV2 DPI 感知，弹窗位置夹取到当前工作区内 |
 
 ## 技术架构
@@ -170,6 +171,8 @@ registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 
 > 用显式委托类型接收方法组，才能保留方法与参数上的 `[Description]`，模型才拿得到参数说明。
 
+> 长耗时工具建议注入 `ToolProgressService`（DI 单例）并周期性 `Report("…")`，进度会实时显示在“正在输入”气泡下方，避免长时间零反馈。参考 `LongRunningTool` 的实现。
+
 ## 内置技能与工具
 
 | 名称 | 类型 | 用途 |
@@ -178,7 +181,7 @@ registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 | `skill-creator` | 技能 | 技能创作方法论：创建、改进、评测技能 |
 | `get-weather` | 技能 | 天气查询规约：强制走工具取数、禁止编造、多城市多次调用、未指明城市先反问 |
 | `get_weather` | 工具 | Open-Meteo 实时天气 + 未来三天预报（无需 API Key），WMO 代码映射中文描述 |
-| `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
+| `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消、每 5 秒上报执行进度，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
 
 ## 技术栈
 

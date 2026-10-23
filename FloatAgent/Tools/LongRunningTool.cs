@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Floaticon.Services;
 
 namespace Floaticon.Tools;
 
@@ -24,6 +25,16 @@ public sealed class LongRunningTool
     /// <summary>等待切片，用于保证取消能及时生效。</summary>
     private static readonly TimeSpan Tick = TimeSpan.FromSeconds(1);
 
+    /// <summary>进度上报间隔（避免每秒刷 UI）。</summary>
+    private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(5);
+
+    private readonly ToolProgressService? _progress;
+
+    public LongRunningTool(ToolProgressService? progress = null)
+    {
+        _progress = progress;
+    }
+
     /// <summary>执行一个耗时约 2 分钟的长任务，结束后返回执行结果。</summary>
     [Description("执行一个耗时约 2 分钟（120 秒）的长耗时任务，任务完成后返回执行结果。" +
                  "当用户要求测试长耗时任务、或明确要求执行一个需要较长时间才能完成的作业时调用。" +
@@ -38,7 +49,10 @@ public sealed class LongRunningTool
 
         try
         {
+            Report($"⚡ 正在执行长耗时任务「{name}」，预计 {Duration.TotalSeconds:0} 秒，请稍候…");
+
             // 逐秒等待：精确凑满 2 分钟，同时让取消在 1 秒内生效
+            var lastReport = TimeSpan.Zero;
             while (stopwatch.Elapsed < Duration)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -51,6 +65,14 @@ public sealed class LongRunningTool
 
                 await Task.Delay(remaining < Tick ? remaining : Tick, cancellationToken)
                     .ConfigureAwait(false);
+
+                // 每 5 秒向界面广播一次进度（期间聊天窗只有“正在输入”气泡，无模型输出）
+                if (stopwatch.Elapsed - lastReport >= ProgressInterval)
+                {
+                    lastReport = stopwatch.Elapsed;
+                    Report($"⚡ run_long_task 执行中… {stopwatch.Elapsed.TotalSeconds:0} / {Duration.TotalSeconds:0} 秒" +
+                           $"（任务：{name}）");
+                }
             }
         }
         catch (OperationCanceledException)
@@ -62,6 +84,8 @@ public sealed class LongRunningTool
 
         stopwatch.Stop();
         cancellationToken.ThrowIfCancellationRequested();
+
+        Report($"✅ 长耗时任务「{name}」执行完毕，正在汇总结果…");
 
         var builder = new StringBuilder();
         builder.AppendLine("**长耗时任务执行完成**");
@@ -77,4 +101,6 @@ public sealed class LongRunningTool
 
         return builder.ToString().TrimEnd();
     }
+
+    private void Report(string message) => _progress?.Report(message);
 }

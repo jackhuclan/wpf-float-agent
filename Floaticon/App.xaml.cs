@@ -69,6 +69,7 @@ public partial class App : Application
 
         // 工具与技能
         services.AddSingleton<IAIToolService, AIToolService>();
+        services.AddSingleton<ToolProgressService>();
         services.AddSingleton<HttpClient>();
         services.AddSingleton<WeatherTool>();
         services.AddSingleton<LongRunningTool>();

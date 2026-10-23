@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Windows;
 using Floaticon.Models;
 using Floaticon.Services;
 
@@ -19,6 +20,7 @@ namespace Floaticon.ViewModels;
 public partial class ChatViewModel : ObservableObject
 {
     private readonly IChatService _chatService;
+    private readonly ToolProgressService _progress;
     private CancellationTokenSource? _cts;
 
     public ObservableCollection<ChatMessage> Messages { get; } = [];
@@ -32,9 +34,10 @@ public partial class ChatViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]
     private bool _isBusy;
 
-    public ChatViewModel(IChatService chatService)
+    public ChatViewModel(IChatService chatService, ToolProgressService progress)
     {
         _chatService = chatService;
+        _progress = progress;
         Messages.Add(new ChatMessage(
             "你好，我是你的 AI 助手，已接入 DeepSeek。已加载技能：grill-me（方案拷问）、skill-creator（技能创作）、get-weather（天气查询），需要时我会自动调用。",
             isUser: false));
@@ -67,12 +70,33 @@ public partial class ChatViewModel : ObservableObject
         var buffer = new StringBuilder();
         var flushWatch = Stopwatch.StartNew();
         TokenUsage? lastUsage = null;
+
+        // 长耗时工具的执行进度：工具在线程池上报 → 调度回 UI 线程 → 打到占位气泡
+        void OnProgress(string message)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null)
+            {
+                reply.Status = message;
+                return;
+            }
+
+            dispatcher.InvokeAsync(() => reply.Status = message);
+        }
+
+        _progress.Progress += OnProgress;
         try
         {
             await foreach (var chunk in _chatService.StreamReplyAsync(history, _cts.Token))
             {
                 if (chunk.Text is not null)
                 {
+                    if (buffer.Length == 0 && reply.Status is not null)
+                    {
+                        // 首块正文到达，撤掉工具进度提示
+                        reply.Status = null;
+                    }
+
                     buffer.Append(chunk.Text);
 
                     // 限流刷新：Markdown 每更新一次都要整篇重排，按 60ms 一批刷新更顺滑
@@ -114,6 +138,7 @@ public partial class ChatViewModel : ObservableObject
         }
         finally
         {
+            _progress.Progress -= OnProgress;
             reply.IsTyping = false;
             IsBusy = false;
         }
