@@ -196,6 +196,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 | `get-weather` | 技能 | 天气查询规约：强制走工具取数、禁止编造、多城市多次调用、未指明城市先反问 |
 | `get_weather` | 工具 | Open-Meteo 实时天气 + 未来三天预报（无需 API Key），WMO 代码映射中文描述 |
 | `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消、每 5 秒上报执行进度，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
+| `thirdparty_long_run_task` | 工具 | 模拟第三方长任务（约 15 秒，内部无法上报进度）：由 `PeriodicProgressService` 在等待侧周期上报进度，返回执行结果；验证第三方方法的进度包装链路 |
 
 ## 技术栈
 

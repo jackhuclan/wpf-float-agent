@@ -94,6 +94,7 @@ public partial class App : Application
         var registry = services.GetRequiredService<IAIToolService>();
         var weather = services.GetRequiredService<WeatherTool>();
         var longRunning = services.GetRequiredService<LongRunningTool>();
+        var progressService = services.GetRequiredService<ToolProgressService>();
 
         // 显式委托类型保住方法上的 [Description]，模型才能拿到参数说明
         Func<string, string?, CancellationToken, Task<string>> getWeather = weather.GetWeatherAsync;
@@ -101,6 +102,21 @@ public partial class App : Application
 
         Func<string, CancellationToken, Task<string>> runLongTask = longRunning.RunAsync;
         registry.AddTool(AIFunctionFactory.Create(runLongTask, "run_long_task"));
+
+        // 验证 PeriodicProgressService：模拟一个内部无法上报进度的第三方长耗时任务，
+        // 由包装器在等待侧周期上报（开始 1 次 + 每 5 秒 1 次 + 完成 1 次）
+        var periodic = new PeriodicProgressService(
+            progressService, "thirdparty_long_run_task", SimulatedThirdPartyTaskAsync);
+        Func<CancellationToken, Task<string>> runThirdparty = periodic.RunAsync;
+        registry.AddTool(AIFunctionFactory.Create(
+            runThirdparty, "thirdparty_long_run_task", "执行一个模拟的第三方长时间运行任务（约 15 秒，内部无法上报进度，由包装器周期上报执行进度）。当用户要求验证第三方长任务、或询问 PeriodicProgressService 的效果时调用。"));
+    }
+
+    /// <summary>模拟的第三方长耗时任务：约 15 秒，内部没有任何进度上报能力。</summary>
+    private static async Task SimulatedThirdPartyTaskAsync(CancellationToken cancellationToken)
+    {
+        // 模拟第三方分步工作（此处不可改动——如同真实第三方库）
+        await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
     }
 
     protected override void OnExit(ExitEventArgs e)
