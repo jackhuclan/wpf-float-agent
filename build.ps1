@@ -1,8 +1,8 @@
 ﻿# Floaticon 构建脚本
 # 用法：
-#   .\build.ps1                 # Release 编译整个解决方案 -> 根目录 release\
-#   .\build.ps1 -Clean          # 先清理 release / artifacts 再编译
-#   .\build.ps1 -Pack           # 编译 + 将 FloatAgent / FloatAgent.Abstractions 打成 NuGet 包 -> 根目录 artifacts\
+#   .\build.ps1                 # win-x64 自包含单文件发布（Floaticon-<版本>.exe）-> 根目录 release\
+#   .\build.ps1 -Clean          # 先清理 release / artifacts 再发布
+#   .\build.ps1 -Pack           # 发布 + 将 FloatAgent / FloatAgent.Abstractions 打成 NuGet 包 -> 根目录 artifacts\
 #   .\build.ps1 -Pack -VersionSuffix preview   # 生成 1.1.0-preview 版本号的包
 [CmdletBinding()]
 param(
@@ -44,16 +44,31 @@ if ($Clean) {
     if ($LASTEXITCODE -ne 0) { throw "dotnet clean 失败（退出码 $LASTEXITCODE）" }
 }
 
-# 1) Release 编译整个解决方案，产物统一放到根目录 release\
-Write-Step "编译解决方案 -> $ReleaseDir"
-dotnet build $Solution -c $Configuration -o $ReleaseDir --nologo
-if ($LASTEXITCODE -ne 0) { throw "编译失败（退出码 $LASTEXITCODE）" }
+# 1) Release 单文件发布：win-x64 自包含 .NET 运行时，用户机器无需安装 .NET；
+#    产物为单个 exe，文件名带版本号（Floaticon-<版本>.exe）
+Write-Step "单文件发布（win-x64 self-contained）-> $ReleaseDir"
+dotnet publish (Join-Path $Root 'Floaticon\Floaticon.csproj') `
+    -c $Configuration -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:DebugType=none -p:DebugSymbols=false `
+    -o $ReleaseDir --nologo
+if ($LASTEXITCODE -ne 0) { throw "发布失败（退出码 $LASTEXITCODE）" }
 
-$exe = Join-Path $ReleaseDir 'Floaticon.exe'
-if (Test-Path $exe) {
-    Write-Host "编译完成：$exe" -ForegroundColor Green
+# 版本号从 Directory.Build.props 读取（唯一事实来源），重命名 exe
+[xml]$buildProps = Get-Content (Join-Path $Root 'Directory.Build.props')
+$version = @($buildProps.Project.PropertyGroup)[0].Version
+$exeName = "Floaticon-$version.exe"
+$plainExe = Join-Path $ReleaseDir 'Floaticon.exe'
+$versionedExe = Join-Path $ReleaseDir $exeName
+if (Test-Path $plainExe) {
+    Move-Item $plainExe $versionedExe -Force
+}
+
+if (Test-Path $versionedExe) {
+    $sizeMb = [math]::Round((Get-Item $versionedExe).Length / 1MB, 1)
+    Write-Host "发布完成：$versionedExe（$sizeMb MB）" -ForegroundColor Green
 } else {
-    Write-Warning "未在 $ReleaseDir 找到 Floaticon.exe，请检查编译输出。"
+    Write-Warning "未在 $ReleaseDir 找到 $exeName，请检查发布输出。"
 }
 
 # 2) 可选：把类库打成 NuGet 包，放到根目录 artifacts\

@@ -120,7 +120,8 @@ dotnet run --project Floaticon
 仓库根目录提供一键构建脚本（`build.cmd` 是 `build.ps1` 的命令行入口，参数原样透传）：
 
 ```bat
-:: Release 编译整个解决方案，产物输出到根目录 release\（含 Floaticon.exe）
+:: win-x64 自包含单文件发布（内含 .NET 运行时，目标机器无需安装 .NET）
+:: 产物：release\Floaticon-<版本号>.exe（版本号取自 Directory.Build.props）
 build.cmd
 
 :: 打包 NuGet 包（FloatAgent、FloatAgent.Abstractions），输出到根目录 artifacts\
@@ -129,9 +130,11 @@ build.cmd -Pack
 :: 带版本后缀打包（生成 FloatAgent.1.1.0-preview.nupkg）
 build.cmd -Pack -VersionSuffix preview
 
-:: 先清理 release\ / artifacts\ 再编译
+:: 先清理 release\ / artifacts\ 再发布
 build.cmd -Clean
 ```
+
+> 单文件发布实质执行：`dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true`。exe 首次启动会自解压本机库到临时目录，稍慢属正常；技能（skills）目录与 config.json 仍按"运行目录"约定放在 exe 旁边。
 
 版本号、作者、项目地址、描述等工程元数据统一在根目录 `Directory.Build.props` 中维护（自动导入全部 .csproj），发版只改一处。
 
