@@ -148,7 +148,7 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 **需求描述**
 
 1. 标题栏 ⚙ 打开模态配置窗（440×500，普通窗口层级，圆角风格与主窗一致）。
-2. 三个必填字段：API Key（PasswordBox 掩码输入，字符不可见）、模型（下拉框，预置 `qwen3:1.7b`、`qwen3:8b`、`deepseek-flash`、`deepseek-v4-pro`；已有配置值不在列表中时自动补入首项）、接口地址（OpenAI 兼容端点，如 `https://api.deepseek.com/v1`）。
+2. 三个必填字段：API Key（PasswordBox 掩码输入，输入字符不可见）、模型（下拉框，预置 `qwen3:1.7b`、`qwen3:8b`、`deepseek-flash`、`deepseek-v4-pro`；已有配置值不在列表中时自动补入首项）、接口地址（OpenAI 兼容端点，如 `https://api.deepseek.com/v1`）；下拉框与其它输入框**水平拉伸等宽**（HorizontalAlignment=Stretch，下拉弹出列表同宽），不出现固定窄宽。
 3. 实时校验：任一必填字段清空立即标红（边框 #EF4444，1.5px），输入后立即恢复；接口地址保存前校验必须为合法 http/https URL。
 4. **测试连接**按钮：用当前表单值（允许未保存）发一次真实小请求，明确区分三种结果——成功、鉴权失败（401 类）、不可达，并以醒目文案展示。
 5. **测试连接进行中，保存按钮进入禁用态并有可辨识的禁用外观（淡靛蓝 #C7CDF4），结果返回后立即恢复可用**；配置窗底部不展示配置文件路径。
@@ -158,9 +158,12 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 **验收标准**
 
 - [ ] 三字段清空全部标红；填回后红色即时消失。
+- [ ] API Key 输入框以掩码圆点显示，任何字符均不可见。
+- [ ] 模型下拉框与 API Key、接口地址输入框左右边界对齐（等宽），下拉弹出列表同宽。
 - [ ] 测试连接对错误 Key/错误地址给出明确区分的提示。
 - [ ] 测试连接进行中保存按钮呈可辨识的禁用外观，返回后恢复可用。
 - [ ] 修改模型后立即发消息使用新模型（AI 工具栏模型名可验证）。
+- [ ] 仓库源码中不含任何 API Key；config.json 已被版本库忽略，仓库仅提供无密钥模板 config.example.json。
 
 ### FR-07 技能系统 Skills（P1）
 
@@ -310,4 +313,4 @@ FloatAgent.Abstractions（接口类库，net10.0）
 | V0.9 平台化     | Host.CreateApplicationBuilder 启动；skills 技能体系（grill-me/skill-creator/get-weather）；IAIToolService 工具注入（get_weather） |
 | V0.10 体验优化   | 滚轮缓动 + 流式跟随滚动 + 限流刷新；修复 Enter 不发送（TextBox 类处理器抢占问题）                                                               |
 | V1.0 工程化     | 拆分三工程：Floaticon 启动壳 / FloatAgent 类库 / FloatAgent.Abstractions 接口                                                  |
-| V1.1 长任务与安全 | 新增 run_long_task 长耗时工具（固定 2 分钟、可取消）与新 FR-10 工具执行进度反馈（气泡内实时显示 N/120 秒）；移除全部窗口强制置顶；API Key 改为掩码输入、仅从 config.json 读取（代码零硬编码，新增 config.example.json 模板并忽略 config.json）；测试连接期间保存按钮禁用态可视化；配置窗底部移除路径展示 |
+| V1.1 长任务与安全 | 新增 run_long_task 长耗时工具（固定 2 分钟、可取消）与新 FR-10 工具执行进度反馈（气泡内实时显示 N/120 秒）；移除全部窗口强制置顶；API Key 改为掩码输入、仅从 config.json 读取（代码零硬编码，新增 config.example.json 模板并忽略 config.json）；模型下拉框水平拉伸与输入框等宽；测试连接期间保存按钮禁用态可视化；配置窗底部移除路径展示 |
