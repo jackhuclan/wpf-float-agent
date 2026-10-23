@@ -71,6 +71,7 @@ public partial class App : Application
         services.AddSingleton<IAIToolService, AIToolService>();
         services.AddSingleton<HttpClient>();
         services.AddSingleton<WeatherTool>();
+        services.AddSingleton<LongRunningTool>();
         services.AddSingleton(sp => SkillProviderFactory.Create(sp.GetService<ILoggerFactory>()));
 
         // 聊天（AgentChatService 每次请求按当前配置重建 Agent，配置保存即生效）
@@ -91,10 +92,14 @@ public partial class App : Application
     {
         var registry = services.GetRequiredService<IAIToolService>();
         var weather = services.GetRequiredService<WeatherTool>();
+        var longRunning = services.GetRequiredService<LongRunningTool>();
 
         // 显式委托类型保住方法上的 [Description]，模型才能拿到参数说明
         Func<string, string?, CancellationToken, Task<string>> getWeather = weather.GetWeatherAsync;
         registry.AddTool(AIFunctionFactory.Create(getWeather, "get_weather"));
+
+        Func<string, CancellationToken, Task<string>> runLongTask = longRunning.RunAsync;
+        registry.AddTool(AIFunctionFactory.Create(runLongTask, "run_long_task"));
     }
 
     protected override void OnExit(ExitEventArgs e)

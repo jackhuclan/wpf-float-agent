@@ -24,7 +24,7 @@
 | 消息工具栏 | 每条 AI 回复下方显示 复制按钮 / `◇ 共消耗 N tokens` / `⚡ 模型名`（工具调用多次往返时用量累加） |
 | 模型配置 | 三字段表单 + 实时必填校验 + **测试连接**（明确区分成功 / 鉴权失败 / 不可达）；保存即生效，无需重启 |
 | 技能系统 | `skills/` 目录下的 `SKILL.md` 自动加载，模型按需 `load_skill`（渐进式披露） |
-| 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（首发 `get_weather`） |
+| 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task`） |
 | 滚动体验 | 6px 细滚动条、像素滚动、滚轮 170ms ease-out 缓动、流式期间智能跟随底部 |
 | 多屏适配 | PerMonitorV2 DPI 感知，弹窗位置夹取到当前工作区内 |
 
@@ -78,6 +78,7 @@ wpf-float-agent/
 │  ├─ Services/                  # AgentChatService、JsonConfigService、AIToolService、
 │  │                             # OpenAIModelTester、SkillProviderFactory、ServiceLocator
 │  ├─ Tools/                     # WeatherTool（get_weather，Open-Meteo）
+│  │                             # LongRunningTool（run_long_task，2 分钟长耗时）
 │  ├─ ViewModels/                # ChatViewModel、ConfigViewModel、ChatMessage
 │  ├─ Views/                     # FloatingBallWindow、ChatWindow、ConfigWindow
 │  │  └─ Behaviors/              # SmoothScrollBehavior（滚轮缓动）
@@ -177,6 +178,7 @@ registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 | `skill-creator` | 技能 | 技能创作方法论：创建、改进、评测技能 |
 | `get-weather` | 技能 | 天气查询规约：强制走工具取数、禁止编造、多城市多次调用、未指明城市先反问 |
 | `get_weather` | 工具 | Open-Meteo 实时天气 + 未来三天预报（无需 API Key），WMO 代码映射中文描述 |
+| `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
 
 ## 技术栈
 
