@@ -63,7 +63,8 @@ dotnet run --project Floaticon       # 或直接运行 Floaticon/bin/Debug/net10
 
 - 自己写的工具：注入 `ToolProgressService`，执行中 `Report("…")` 上报进度（参考 `LongRunningTool`，
   等待按 1 秒切片，保证取消 1 秒内生效）。
-- 不可修改的第三方方法：用 `PeriodicProgressService` 包装（开始/每 5 秒/完成三段式上报），
+- 不可修改的第三方方法：用 `PeriodicProgressService` 包装（开始/每 5 秒/完成三段式上报）；
+  构造函数私有，统一用 `PeriodicProgressService.Create(...)` 工厂创建（四种委托形态各有重载），
   参考 `RegisterTools` 里的 `thirdparty_long_run_task`。
 
 ## 验证习惯（重要）

@@ -14,7 +14,7 @@ namespace Floaticon.Tools;
 /// <remarks>
 /// 典型用法（一个第三方任务对应一个实例，注册时绑定）：
 /// <code>
-/// var periodic = new PeriodicProgressService(
+/// var periodic = PeriodicProgressService.Create(
 ///     progressService, "thirdparty_long_run_task", ThirdPartyLib.LongRunAsync);
 ///
 /// // RunAsync 只剩 CancellationToken 一个参数，显式委托可保留签名
@@ -37,44 +37,14 @@ public sealed class PeriodicProgressService
     /// <summary>周期上报间隔，默认 5 秒。</summary>
     public TimeSpan Interval { get; }
 
-    /// <summary>包装一个接收取消令牌的第三方异步任务。</summary>
-    public PeriodicProgressService(
+    /// <summary>
+    /// 核心构造函数（私有）：仅接收"返回可空字符串结果"的委托形态，
+    /// 其余委托形态统一由 <c>Create</c> 工厂方法适配后调用。
+    /// </summary>
+    private PeriodicProgressService(
         ToolProgressService progress,
         string name,
-        Func<CancellationToken, Task> work,
-        TimeSpan? interval = null)
-    {
-        _progress = progress ?? throw new ArgumentNullException(nameof(progress));
-        Name = string.IsNullOrWhiteSpace(name) ? "第三方方法" : name.Trim();
-        _work = work ?? throw new ArgumentNullException(nameof(work));
-        Interval = interval ?? TimeSpan.FromSeconds(5);
-    }
-
-    /// <summary>包装一个不接收取消令牌的第三方异步任务。</summary>
-    public PeriodicProgressService(
-        ToolProgressService progress,
-        string name,
-        Func<Task> work,
-        TimeSpan? interval = null)
-        : this(progress, name, _ => work(), interval)
-    {
-    }
-
-    /// <summary>包装一个同步的第三方任务（在线程池上执行）。</summary>
-    public PeriodicProgressService(
-        ToolProgressService progress,
-        string name,
-        Action work,
-        TimeSpan? interval = null)
-        : this(progress, name, _ => Task.Run(work), interval)
-    {
-    }
-
-    /// <summary>包装一个返回字符串结果的第三方异步任务，结果会附在完成汇报里。</summary>
-    public PeriodicProgressService(
-        ToolProgressService progress,
-        string name,
-        Func<CancellationToken, Task<string>> work,
+        Func<CancellationToken, Task<string?>> work,
         TimeSpan? interval = null)
     {
         _progress = progress ?? throw new ArgumentNullException(nameof(progress));
@@ -82,6 +52,50 @@ public sealed class PeriodicProgressService
         _work = async ct => _lastResult = await work(ct).ConfigureAwait(false);
         Interval = interval ?? TimeSpan.FromSeconds(5);
     }
+
+    /// <summary>包装一个接收取消令牌并返回字符串结果的第三方异步任务。</summary>
+    public static PeriodicProgressService Create(
+        ToolProgressService progress,
+        string name,
+        Func<CancellationToken, Task<string>> work,
+        TimeSpan? interval = null) =>
+        new(progress, name, async ct => await work(ct).ConfigureAwait(false), interval);
+
+    /// <summary>包装一个接收取消令牌的第三方异步任务。</summary>
+    public static PeriodicProgressService Create(
+        ToolProgressService progress,
+        string name,
+        Func<CancellationToken, Task> work,
+        TimeSpan? interval = null) =>
+        new(progress, name, async ct =>
+        {
+            await work(ct).ConfigureAwait(false);
+            return null;
+        }, interval);
+
+    /// <summary>包装一个不接收取消令牌的第三方异步任务。</summary>
+    public static PeriodicProgressService Create(
+        ToolProgressService progress,
+        string name,
+        Func<Task> work,
+        TimeSpan? interval = null) =>
+        new(progress, name, async _ =>
+        {
+            await work().ConfigureAwait(false);
+            return null;
+        }, interval);
+
+    /// <summary>包装一个同步的第三方任务（在线程池上执行）。</summary>
+    public static PeriodicProgressService Create(
+        ToolProgressService progress,
+        string name,
+        Action work,
+        TimeSpan? interval = null) =>
+        new(progress, name, async ct =>
+        {
+            await Task.Run(work, ct).ConfigureAwait(false);
+            return null;
+        }, interval);
 
     /// <summary>
     /// 执行包装的第三方任务并周期性上报进度：

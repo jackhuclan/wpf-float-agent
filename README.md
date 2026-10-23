@@ -207,7 +207,7 @@ registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 
 ```csharp
 // App.xaml.cs 的 RegisterTools 中（progressService 从容器解析 ToolProgressService）
-var periodic = new PeriodicProgressService(
+var periodic = PeriodicProgressService.Create(
     progressService, "thirdparty_long_run_task", ThirdPartyLib.LongRunAsync);
 
 // RunAsync 只剩 CancellationToken 一个参数；用方法组注册，别用 lambda（会丢失取消接线）
@@ -215,7 +215,7 @@ Func<CancellationToken, Task<string>> run = periodic.RunAsync;
 registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第三方的长时间运行任务"));
 ```
 
-支持四种第三方形态：`Func<CancellationToken, Task>`、`Func<Task>`、`Action`（线程池执行）、`Func<CancellationToken, Task<string>>`（返回值附在完成汇报里）。第三方抛异常会转为可读的失败结果文本，点“停止”仍可在周期间隔内取消。
+构造函数为私有，统一通过 `Create` 工厂方法创建；支持四种第三方形态：`Func<CancellationToken, Task>`、`Func<Task>`、`Action`（线程池执行）、`Func<CancellationToken, Task<string>>`（返回值附在完成汇报里）。第三方抛异常会转为可读的失败结果文本，点“停止”仍可在周期间隔内取消。
 
 ## 内置技能与工具
 

@@ -100,7 +100,7 @@ public partial class App : Application
 
         // 验证 PeriodicProgressService：模拟一个内部无法上报进度的第三方长耗时任务，
         // 由包装器在等待侧周期上报（开始 1 次 + 每 5 秒 1 次 + 完成 1 次）
-        var periodic = new PeriodicProgressService(
+        var periodic = PeriodicProgressService.Create(
             progressService, "thirdparty_long_run_task", SimulatedThirdPartyTaskAsync);
         Func<CancellationToken, Task<string>> runThirdparty = periodic.RunAsync;
         registry.AddTool(AIFunctionFactory.Create(
