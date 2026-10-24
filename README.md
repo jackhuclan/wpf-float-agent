@@ -2,6 +2,11 @@
 
 [English](README.en.md) | 简体中文
 
+[![NuGet](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjackhuclan%2Fwpf-float-agent%2Fmain%2FDirectory.Build.props&query=%2FProject%2FPropertyGroup%2FVersion&prefix=v&label=nuget&logo=nuget)](https://github.com/jackhuclan/wpf-float-agent/pkgs)
+[![CI](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/ci.yml)
+[![publish-nuget](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/publish-nuget.yml)
+[![License: MIT](https://img.shields.io/github/license/jackhuclan/wpf-float-agent)](https://github.com/jackhuclan/wpf-float-agent/blob/main/LICENSE)
+
 一个常驻 Windows 桌面右下角的轻量 AI 入口：一颗可拖拽的悬浮球，点击即弹出流式对话窗，内置 Markdown 渲染、Token 统计、技能（Skills）与工具（Tools）体系，模型供应商可配置。
 
 基于 **.NET 10 WPF** 与 **Microsoft Agent Framework（MAF）** 构建，界面层零第三方 UI 框架依赖（全部自绘）。
@@ -274,4 +279,4 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 
 ## License
 
-本项目暂未指定开源许可证。
+本项目基于 [MIT](LICENSE) 许可证开源。

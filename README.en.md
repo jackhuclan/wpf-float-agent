@@ -2,6 +2,11 @@
 
 English | [简体中文](README.md)
 
+[![NuGet](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjackhuclan%2Fwpf-float-agent%2Fmain%2FDirectory.Build.props&query=%2FProject%2FPropertyGroup%2FVersion&prefix=v&label=nuget&logo=nuget)](https://github.com/jackhuclan/wpf-float-agent/pkgs)
+[![CI](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/ci.yml)
+[![publish-nuget](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/jackhuclan/wpf-float-agent/actions/workflows/publish-nuget.yml)
+[![License: MIT](https://img.shields.io/github/license/jackhuclan/wpf-float-agent)](https://github.com/jackhuclan/wpf-float-agent/blob/main/LICENSE)
+
 A lightweight AI entry point that lives in the bottom-right corner of your Windows desktop: a draggable floating ball — click it and a streaming chat window pops up, with built-in Markdown rendering, token usage stats, a Skills and Tools system, and fully configurable model providers.
 
 Built on **.NET 10 WPF** and the **Microsoft Agent Framework (MAF)**, with zero third-party UI framework dependencies in the presentation layer (everything is custom-drawn).
@@ -274,4 +279,4 @@ The constructors are private — create instances through the `Create` factory m
 
 ## License
 
-No open-source license has been designated yet.
+This project is open-sourced under the [MIT](LICENSE) license.
