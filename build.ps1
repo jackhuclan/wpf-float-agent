@@ -47,7 +47,7 @@ if ($Clean) {
 # 1) Release 单文件发布：win-x64 自包含 .NET 运行时，用户机器无需安装 .NET；
 #    产物为单个 exe，文件名带版本号（Floaticon-<版本>.exe）
 Write-Step "单文件发布（win-x64 self-contained）-> $ReleaseDir"
-dotnet publish (Join-Path $Root 'Floaticon\Floaticon.csproj') `
+dotnet publish (Join-Path $Root 'src\Floaticon\Floaticon.csproj') `
     -c $Configuration -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
     -p:DebugType=none -p:DebugSymbols=false `
@@ -77,8 +77,8 @@ if ($Pack) {
     New-Item $ArtifactsDir -ItemType Directory -Force | Out-Null
 
     $packTargets = @(
-        (Join-Path $Root 'FloatAgent.Abstractions\FloatAgent.Abstractions.csproj'),
-        (Join-Path $Root 'FloatAgent\FloatAgent.csproj')
+        (Join-Path $Root 'src\FloatAgent.Abstractions\FloatAgent.Abstractions.csproj'),
+        (Join-Path $Root 'src\FloatAgent\FloatAgent.csproj')
     )
 
     foreach ($project in $packTargets) {

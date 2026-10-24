@@ -1,0 +1,260 @@
+# Floaticon · Floating AI Assistant for Windows Desktop
+
+English | [简体中文](README.md)
+
+A lightweight AI entry point that lives in the bottom-right corner of your Windows desktop: a draggable floating ball — click it and a streaming chat window pops up, with built-in Markdown rendering, token usage stats, a Skills and Tools system, and fully configurable model providers.
+
+Built on **.NET 10 WPF** and the **Microsoft Agent Framework (MAF)**, with zero third-party UI framework dependencies in the presentation layer (everything is custom-drawn).
+
+```
+┌──────────────┐   click   ┌─────────────────────────────┐
+│ FloatingBall │ ────────▶ │  AI Assistant       ⚙   ✕  │
+│  60px drag   │ ◀──────── │ ─────────────────────────── │
+└──────────────┘  collapse │  Messages (Markdown, stream)│
+                           │ ─────────────────────────── │
+                           │  Input box               ➤  │
+                           └─────────────────────────────┘
+```
+
+## Features
+
+| Capability | Description |
+| --- | --- |
+| Persistent floating ball | 72×72 borderless transparent window, no taskbar entry; drag to move — movement ≤4 DIP counts as a click |
+| Streaming chat | Token-by-token streaming; the body switches to live output as soon as the first chunk arrives; stop anytime while generating |
+| Markdown rendering | Headings, bold, code blocks, quotes, lists; compact layout (12px body text) |
+| Message toolbar | Each AI reply shows a copy button / `◇ N tokens used` / `⚡ model name` (usage accumulates across multi-turn tool calls) |
+| Model configuration | Three-field form + live required-field validation + **Test Connection** (clearly distinguishes success / auth failure / unreachable); saving takes effect immediately, no restart needed |
+| Skill system | `SKILL.md` files under the `skills/` directory are auto-discovered; the model loads them on demand via `load_skill` (progressive disclosure) |
+| Tool system | C# functions registered as AIFunctions through `IAIToolService`, invoked automatically by the Agent (`get_weather` / `run_long_task` / `run_container_code`) |
+| Scrolling experience | 6px slim scrollbar, pixel-based scrolling, 170ms ease-out wheel animation, smart follow-to-bottom during streaming |
+| Tool progress feedback | Long-running tools report progress in real time (e.g. `⚡ run_long_task running… 60 / 120 s`), shown under the "typing" bubble — no more silent waiting |
+| Multi-monitor support | PerMonitorV2 DPI awareness; popup positions are clamped to the current working area |
+
+## Architecture
+
+Three projects with a one-way, non-invertible dependency direction:
+
+![Visual Studio solution structure](docs/solution-projects.png)
+
+```
+Floaticon (WinExe startup shell)
+  │  Assembly only: build Host → register DI → Start → show floating ball
+  ▼
+FloatAgent (business class library, WPF)
+  │  Models / Services / Tools / ViewModels / Views / skills
+  ▼
+FloatAgent.Abstractions (interface library)
+     IAIToolService (AddTool / AsTools)
+```
+
+**Key design decisions**
+
+- **Startup**: `Host.CreateApplicationBuilder` builds the generic host; `StopAsync + Dispose` releases resources on exit.
+- **Class libraries never reference the startup project**: views inside the library resolve transient services through `ServiceLocator.Services` (assigned by `App` after the host is built).
+- **Configuration takes effect immediately**: `AgentChatService` rebuilds the Agent from `IConfigService.Current` on every request, so the next message after saving uses the new model.
+- **Extension points for skills and tools**: adding a skill only requires a new directory; adding a tool only requires implementing an `AIFunction` and registering it — the chat core pipeline stays untouched.
+
+### Request pipeline
+
+```
+ChatViewModel
+  └─ IChatService.StreamReplyAsync(history)
+       └─ AgentChatService
+            ├─ Create OpenAIClient → ChatClient → AsAIAgent from current config
+            ├─ ChatOptions.Instructions  = SystemPrompt
+            ├─ ChatOptions.Tools         = IAIToolService.AsTools()
+            └─ AIContextProviders        = AgentSkillsProvider (skills directory)
+                 │
+                 ▼  MAF RunStreamingAsync
+            StreamChunk(Text / Usage) ──▶ incremental bubble rendering (60ms throttle)
+```
+
+## Repository layout
+
+```
+wpf-float-agent/
+├─ src/Floaticon/                    # Startup shell (WinExe WPF)
+│  ├─ App.xaml / App.xaml.cs     # Host build, DI assembly, ServiceLocator assignment
+│  ├─ app.manifest               # PerMonitorV2 DPI awareness
+│  └─ Properties/AssemblyInfo.cs
+├─ src/FloatAgent/                   # Business class library
+│  ├─ Models/                    # ChatTurn, TokenUsage, ModelConfig
+│  ├─ Services/                  # AgentChatService, JsonConfigService, AIToolService,
+│  │                             # OpenAIModelTester, SkillProviderFactory, ServiceLocator
+│  ├─ Tools/                     # WeatherTool (get_weather, Open-Meteo)
+│  │                             # LongRunningTool (run_long_task, 2-minute long task)
+│  │                             # ContainerCodeTool (run_container_code, C#/Python/JS in Linux containers)
+│  ├─ ViewModels/                # ChatViewModel, ConfigViewModel, ChatMessage
+│  ├─ Views/                     # FloatingBallWindow, ChatWindow, ConfigWindow
+│  │  └─ Behaviors/              # SmoothScrollBehavior (wheel easing)
+│  └─ skills/                    # grill-me, skill-creator, get-weather
+├─ src/FloatAgent.Abstractions/      # IAIToolService
+├─ docs/                         # PRD (md + docx)
+├─ output/                       # Intermediate artifacts of the PRD generation pipeline
+├─ Directory.Build.props         # Solution-wide metadata (version/author/URL/description)
+├─ Directory.Packages.props      # Central NuGet package version management
+├─ build.cmd / build.ps1         # One-click Release build + NuGet packing (output → release\ / artifacts\)
+├─ AGENTS.md / .editorconfig     # Project conventions and code style
+└─ Floaticon.slnx
+```
+
+## Requirements
+
+- Windows 10 / 11
+- [.NET SDK 10.0](https://dotnet.microsoft.com/download) (developed with 10.0.402)
+- An OpenAI-compatible model endpoint (defaults tuned for DeepSeek; local Ollama qwen models also work)
+
+## Quick start
+
+```bash
+git clone https://github.com/jackhuclan/wpf-float-agent.git
+cd wpf-float-agent
+
+dotnet build Floaticon.slnx
+
+# Run (or simply double-click src/Floaticon/bin/Debug/net10.0-windows/Floaticon.exe)
+dotnet run --project src/Floaticon
+```
+
+After startup, a floating ball appears in the bottom-right corner of the desktop. **Single-click** it to open the chat window; **right-click** to open the chat or exit.
+
+### Build and package
+
+One-click build scripts live at the repository root (`build.cmd` is the command-line entry to `build.ps1`; arguments are passed through):
+
+```bat
+:: Self-contained single-file publish for win-x64 (.NET runtime included; no .NET install needed on target machines)
+:: Output: release\Floaticon-<version>.exe (version read from Directory.Build.props)
+build.cmd
+
+:: Pack NuGet packages (FloatAgent, FloatAgent.Abstractions) into artifacts\
+build.cmd -Pack
+
+:: Pack with a version suffix (produces FloatAgent.1.2.0-preview.nupkg)
+build.cmd -Pack -VersionSuffix preview
+
+:: Clean release\ / artifacts\ before publishing
+build.cmd -Clean
+```
+
+> Under the hood the single-file publish runs: `dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true`. The first launch of the exe extracts native libraries to a temp directory, so it is slightly slower — this is normal. The skills directory and config.json still follow the "working directory" convention and live next to the exe.
+
+Version, author, project URL, description, and other project metadata are maintained centrally in the root `Directory.Build.props` (auto-imported by all .csproj files) — a single place to bump a release.
+
+> Note: `MdXaml` (2.0.0-pre) and `Microsoft.Agents.AI.Tools.Shell` (1.25.0-preview), which FloatAgent depends on, are pre-release packages, so packing stable NuGet packages raises NU5104 warnings. This does not affect package generation or usage.
+
+### Configure the model
+
+The API key is read only from `config.json` — **no secrets are kept in code**. On first launch the config file does not exist, so all three fields show red-border required prompts once you open **⚙**:
+
+- **Recommended**: fill in the three fields in the config window → click "Test Connection" to verify → save. The app writes the configuration to `config.json` next to the exe.
+- **Manual**: copy `config.example.json` to `config.json` in the exe directory, fill in the key, and restart the app.
+
+| Field | Description | Example |
+| --- | --- | --- |
+| API Key | Endpoint key (required, no default, masked while typing) | `sk-...` |
+| Model | Dropdown selection; a configured value missing from the list is added automatically | `deepseek-chat` |
+| Endpoint | OpenAI-compatible endpoint | `https://api.deepseek.com/v1` |
+
+The configuration is saved as **`config.json` in the working directory** (the working directory is anchored to the exe folder at startup, so both double-click and command-line launches resolve to the same location). See `config.example.json`:
+
+```json
+{
+  "ApiKey": "sk-...",
+  "Model": "deepseek-chat",
+  "Endpoint": "https://api.deepseek.com/v1"
+}
+```
+
+> ⚠️ `config.json` is listed in `.gitignore` and the API key is stored in plain text — never commit or share it. The repository only contains `config.example.json` without real secrets. If the config file is missing or corrupted, the app falls back to defaults (empty API key) without blocking startup; just re-enter the settings.
+
+## Extending
+
+### Add a skill
+
+Create a directory under `src/FloatAgent/skills/` with a `SKILL.md` (YAML frontmatter + instructions):
+
+```markdown
+---
+name: my-skill
+description: One sentence on when this skill applies (the model uses this to decide whether to load it)
+---
+
+# My Skill
+Concrete steps…
+```
+
+After rebuilding and running, the model first sees the skill directory summary and loads the full text via `load_skill` when needed. Optional resource files (`.md`/`.json`/`.yaml`/`.yml`/`.txt`) are read through `read_skill_resource`; for security reasons scripts inside skills are **never executed**.
+
+### Add a tool
+
+```csharp
+public sealed class MyTool
+{
+    [Description("What the tool does — the model uses this to decide when to call it")]
+    public async Task<string> DoSomethingAsync(
+        [Description("Parameter description")] string input,
+        CancellationToken cancellationToken = default) { /* ... */ }
+}
+
+// Register in RegisterTools (src/Floaticon/App.xaml.cs)
+Func<string, CancellationToken, Task<string>> fn = tool.DoSomethingAsync;
+registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
+```
+
+> Receive the method group with an explicit delegate type so the `[Description]` attributes on the method and parameters survive — that's how the model gets parameter descriptions.
+
+> For long-running tools, inject the `ToolProgressService` (DI singleton) and call `Report("…")` periodically; progress shows live under the "typing" bubble instead of a long silence. See `LongRunningTool` for a reference implementation.
+
+**Wrapping third-party long-running methods you cannot modify**: when the third-party code cannot report progress internally, use `PeriodicProgressService` to report from the waiting side (1× on start → 1× every 5 s → 1× on completion) with zero changes to the third-party code:
+
+```csharp
+// In RegisterTools (src/Floaticon/App.xaml.cs); progressService resolves ToolProgressService from the container
+var periodic = PeriodicProgressService.Create(
+    progressService, "thirdparty_long_run_task", ThirdPartyLib.LongRunAsync);
+
+// RunAsync takes only a CancellationToken; register with a method group, not a lambda (lambdas lose the cancellation wiring)
+Func<CancellationToken, Task<string>> run = periodic.RunAsync;
+registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "Long-running third-party task"));
+```
+
+The constructors are private — create instances through the `Create` factory methods. Four third-party shapes are supported: `Func<CancellationToken, Task>`, `Func<Task>`, `Action` (runs on the thread pool), and `Func<CancellationToken, Task<string>>` (the return value is appended to the completion report). Exceptions thrown by the third party are converted into readable failure text returned to the model; clicking "Stop" still cancels within the reporting interval.
+
+## Built-in skills and tools
+
+| Name | Type | Purpose |
+| --- | --- | --- |
+| `grill-me` | Skill | Plan interrogation: treats a vague plan as a decision tree and asks numbered questions front by front; outputs a consensus summary when the frontier is cleared |
+| `skill-creator` | Skill | Skill-authoring methodology: create, improve, and evaluate skills |
+| `get-weather` | Skill | Weather-query protocol: forces tool-based data, forbids fabrication, supports multiple cities and repeated calls, asks back when the city is unspecified |
+| `get_weather` | Tool | Open-Meteo live weather + 3-day forecast (no API key needed), WMO codes mapped to descriptions |
+| `run_long_task` | Tool | Long-running task (fixed 2 minutes): 1-second sliced waits, mid-run cancellation, progress reported every 5 seconds; returns task name / start-end times / actual duration. Used to verify the Agent stays responsive while a tool occupies it |
+| `thirdparty_long_run_task` | Tool | Simulated third-party long task (~15 s, cannot report progress internally): `PeriodicProgressService` reports progress periodically from the waiting side and returns the result; validates the third-party progress-wrapper pipeline |
+| `run_container_code` | Tool | Based on `DockerShellExecutor` from `Microsoft.Agents.AI.Tools.Shell`, runs C# / Python / JavaScript in a disposable Linux container (no runtime needed on the host): scripts via path or inline code, written in as base64 before execution, network isolation + 1 GiB memory cap + 180 s timeout, progress every 5 seconds; for C# a mini offline-restoreable project is generated inside the container (no network access); first run needs to pull images |
+
+## Tech stack
+
+| Component | Version | Purpose |
+| --- | --- | --- |
+| .NET / WPF | net10.0-windows | Desktop framework |
+| Microsoft.Agents.AI(.OpenAI) | 1.25.0 | Agent, skill orchestration, streaming chat |
+| Microsoft.Extensions.AI.Abstractions | 10.10.1 | AIFunction / ChatMessage abstractions |
+| CommunityToolkit.Mvvm | 8.4.2 | ObservableObject / RelayCommand |
+| MdXaml | 2.0.0-pre | Markdown → FlowDocument rendering |
+| Microsoft.Extensions.Hosting | 10.0.12 | Generic host and dependency injection |
+
+## Known limitations
+
+- User messages render as plain text (Markdown looks poor on the blue bubble; approach TBD).
+- Full-document Markdown re-layout during long replies has minor overhead, mitigated by a 60ms throttle.
+- With a Chinese IME, the first Enter commits the candidate text — this is expected; only the next Enter sends.
+- No single-instance enforcement; launching twice shows two floating balls.
+
+## Documentation
+
+- [Product Requirements (PRD) v1.1](docs/Floaticon-PRD-v1.1.md) (Chinese) · [docx archive (v1.0)](docs/Floaticon-PRD-v1.0.docx)
+
+## License
+
+No open-source license has been designated yet.

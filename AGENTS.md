@@ -12,9 +12,9 @@ Floaticon：Windows 桌面右下角悬浮 AI 助手（.NET 10 WPF）。悬浮球
 ## 工程结构
 
 ```
-Floaticon/                 启动壳（WinExe）：App.xaml.cs 只做 Host 构建 + DI 装配，禁止写业务逻辑
-FloatAgent/                业务类库：Models / Services / Tools / ViewModels / Views / skills
-FloatAgent.Abstractions/   接口类库（net10.0）：IAIToolService
+src/Floaticon/            启动壳（WinExe）：App.xaml.cs 只做 Host 构建 + DI 装配，禁止写业务逻辑
+src/FloatAgent/           业务类库：Models / Services / Tools / ViewModels / Views / skills
+src/FloatAgent.Abstractions/ 接口类库（net10.0）：IAIToolService
 Directory.Packages.props   NuGet 包版本集中管理（csproj 里只写 Include 不写 Version）
 docs/                      PRD（md 为准，docx 为存档）
 ```
@@ -26,7 +26,7 @@ docs/                      PRD（md 为准，docx 为存档）
 
 ```bash
 dotnet build Floaticon.slnx          # 0 警告 0 错误是基线
-dotnet run --project Floaticon       # 或直接运行 Floaticon/bin/Debug/net10.0-windows/Floaticon.exe
+dotnet run --project src/Floaticon       # 或直接运行 src/Floaticon/bin/Debug/net10.0-windows/Floaticon.exe
 ```
 
 - 运行时工作目录被锚定到 exe 目录（`Directory.SetCurrentDirectory(AppContext.BaseDirectory)`），

@@ -271,6 +271,8 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 
 ## 6. 系统架构与工程结构
 
+> 物理布局：三个工程目录统一放在仓库根目录的 `src/` 下（`src/Floaticon`、`src/FloatAgent`、`src/FloatAgent.Abstractions`），解决方案文件 `Floaticon.slnx` 位于根目录。
+
 ### 6.1 架构分层
 
 ```

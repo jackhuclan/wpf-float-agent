@@ -1,5 +1,7 @@
 # Floaticon · 桌面悬浮 AI 助手
 
+[English](README.en.md) | 简体中文
+
 一个常驻 Windows 桌面右下角的轻量 AI 入口：一颗可拖拽的悬浮球，点击即弹出流式对话窗，内置 Markdown 渲染、Token 统计、技能（Skills）与工具（Tools）体系，模型供应商可配置。
 
 基于 **.NET 10 WPF** 与 **Microsoft Agent Framework（MAF）** 构建，界面层零第三方 UI 框架依赖（全部自绘）。
@@ -32,6 +34,8 @@
 ## 技术架构
 
 三工程拆分，依赖方向单向不可逆：
+
+![Visual Studio 解决方案结构](docs/solution-projects.png)
 
 ```
 Floaticon（WinExe 启动壳）
@@ -70,11 +74,11 @@ ChatViewModel
 
 ```
 wpf-float-agent/
-├─ Floaticon/                    # 启动壳（WinExe WPF）
+├─ src/Floaticon/                    # 启动壳（WinExe WPF）
 │  ├─ App.xaml / App.xaml.cs     # Host 构建、DI 装配、ServiceLocator 赋值
 │  ├─ app.manifest               # PerMonitorV2 DPI 感知
 │  └─ Properties/AssemblyInfo.cs
-├─ FloatAgent/                   # 业务类库
+├─ src/FloatAgent/                   # 业务类库
 │  ├─ Models/                    # ChatTurn、TokenUsage、ModelConfig
 │  ├─ Services/                  # AgentChatService、JsonConfigService、AIToolService、
 │  │                             # OpenAIModelTester、SkillProviderFactory、ServiceLocator
@@ -85,7 +89,7 @@ wpf-float-agent/
 │  ├─ Views/                     # FloatingBallWindow、ChatWindow、ConfigWindow
 │  │  └─ Behaviors/              # SmoothScrollBehavior（滚轮缓动）
 │  └─ skills/                    # grill-me、skill-creator、get-weather
-├─ FloatAgent.Abstractions/      # IAIToolService
+├─ src/FloatAgent.Abstractions/      # IAIToolService
 ├─ docs/                         # PRD（md + docx）
 ├─ output/                       # PRD 生成链路中间产物
 ├─ Directory.Build.props         # 全解决方案共享元数据（版本/作者/项目地址/描述）
@@ -109,8 +113,8 @@ cd wpf-float-agent
 
 dotnet build Floaticon.slnx
 
-# 运行（也可直接双击 Floaticon/bin/Debug/net10.0-windows/Floaticon.exe）
-dotnet run --project Floaticon
+# 运行（也可直接双击 src/Floaticon/bin/Debug/net10.0-windows/Floaticon.exe）
+dotnet run --project src/Floaticon
 ```
 
 启动后桌面右下角出现悬浮球，**单击**弹出聊天窗，**右键**可打开聊天或退出。
@@ -127,7 +131,7 @@ build.cmd
 :: 打包 NuGet 包（FloatAgent、FloatAgent.Abstractions），输出到根目录 artifacts\
 build.cmd -Pack
 
-:: 带版本后缀打包（生成 FloatAgent.1.1.0-preview.nupkg）
+:: 带版本后缀打包（生成 FloatAgent.1.2.0-preview.nupkg）
 build.cmd -Pack -VersionSuffix preview
 
 :: 先清理 release\ / artifacts\ 再发布
@@ -169,7 +173,7 @@ API Key 只从 `config.json` 读取，**代码中不保留任何密钥**。首�
 
 ### 新增技能
 
-在 `FloatAgent/skills/` 下新建目录，放入 `SKILL.md`（YAML frontmatter + 正文指令）：
+在 `src/FloatAgent/skills/` 下新建目录，放入 `SKILL.md`（YAML frontmatter + 正文指令）：
 
 ```markdown
 ---
@@ -194,7 +198,7 @@ public sealed class MyTool
         CancellationToken cancellationToken = default) { /* ... */ }
 }
 
-// 在 Floaticon/App.xaml.cs 的 RegisterTools 中注册
+// 在 src/Floaticon/App.xaml.cs 的 RegisterTools 中注册
 Func<string, CancellationToken, Task<string>> fn = tool.DoSomethingAsync;
 registry.AddTool(AIFunctionFactory.Create(fn, "do_something"));
 ```

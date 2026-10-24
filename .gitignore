@@ -53,4 +53,3 @@ config.json
 
 # 构建产物（build.ps1 / build.cmd 生成）
 release/
-artifacts/
