@@ -144,6 +144,20 @@ Version, author, project URL, description, and other project metadata are mainta
 
 > Note: `MdXaml` (2.0.0-pre) and `Microsoft.Agents.AI.Tools.Shell` (1.25.0-preview), which FloatAgent depends on, are pre-release packages, so packing stable NuGet packages raises NU5104 warnings. This does not affect package generation or usage.
 
+### NuGet auto-publish (CI)
+
+A GitHub Actions workflow ships with the repo: [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml). On every push to `main` (or a manual dispatch, or a published Release) it packs `FloatAgent` / `FloatAgent.Abstractions` automatically and publishes them to **GitHub Packages** (`https://nuget.pkg.github.com/jackhuclan/index.json`). Publishing the same version again is skipped, so only commits with a bumped version produce new packages.
+
+Installing from GitHub Packages (a GitHub PAT is required, even for public packages):
+
+```bash
+dotnet nuget add source \
+  --username <GitHub username> --password <PAT> --store-password-in-clear-text \
+  --name github "https://nuget.pkg.github.com/jackhuclan/index.json"
+
+dotnet add package FloatAgent --source github
+```
+
 ### Configure the model
 
 The API key is read only from `config.json` — **no secrets are kept in code**. On first launch the config file does not exist, so all three fields show red-border required prompts once you open **⚙**:

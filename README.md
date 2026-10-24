@@ -144,6 +144,20 @@ build.cmd -Clean
 
 > 说明：`FloatAgent` 依赖的 MdXaml（2.0.0-pre）与 Microsoft.Agents.AI.Tools.Shell（1.25.0-preview）为预发布包，打稳定版 NuGet 包时会出现 NU5104 提示，不影响包的生成与使用。
 
+### NuGet 自动发布（CI）
+
+仓库内置 GitHub Actions 工作流 [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml)：每次推送到 `main`（或手动触发、发布 Release）时，自动打包 `FloatAgent` / `FloatAgent.Abstractions` 并发布到 **GitHub Packages**（`https://nuget.pkg.github.com/jackhuclan/index.json`）。同版本重复发布会自动跳过，因此只有升了版本号的提交才会产生新包。
+
+从 GitHub Packages 安装（需 GitHub PAT，public 包也要求认证）：
+
+```bash
+dotnet nuget add source \
+  --username <GitHub 用户名> --password <PAT> --store-password-in-clear-text \
+  --name github "https://nuget.pkg.github.com/jackhuclan/index.json"
+
+dotnet add package FloatAgent --source github
+```
+
 ### 配置模型
 
 API Key 只从 `config.json` 读取，**代码中不保留任何密钥**。首次启动时配置文件不存在，点开 **⚙** 后三个字段都会红框提示必填：
