@@ -131,7 +131,7 @@ build.cmd
 :: 打包 NuGet 包（FloatAgent、FloatAgent.Abstractions），输出到根目录 artifacts\
 build.cmd -Pack
 
-:: 带版本后缀打包（生成 FloatAgent.1.2.0-preview.nupkg）
+:: 带版本后缀打包（生成 FloatAgent.1.3.0-preview.nupkg）
 build.cmd -Pack -VersionSuffix preview
 
 :: 先清理 release\ / artifacts\ 再发布

@@ -1,5 +1,4 @@
-
-namespace Floaticon.Services;
+namespace FloatAgent.Abstractions;
 
 /// <summary>
 /// 工具执行进度广播（单例）。

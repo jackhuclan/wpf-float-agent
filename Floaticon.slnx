@@ -1,7 +1,9 @@
 <Solution>
-  <Project Path="src/FloatAgent.Abstractions/FloatAgent.Abstractions.csproj" />
-  <Project Path="src/FloatAgent/FloatAgent.csproj" />
-  <Project Path="src/Floaticon/Floaticon.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/FloatAgent.Abstractions/FloatAgent.Abstractions.csproj" />
+    <Project Path="src/FloatAgent/FloatAgent.csproj" />
+    <Project Path="src/Floaticon/Floaticon.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="AGENTS.md" />
     <File Path="README.md" />

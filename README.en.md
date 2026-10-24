@@ -131,7 +131,7 @@ build.cmd
 :: Pack NuGet packages (FloatAgent, FloatAgent.Abstractions) into artifacts\
 build.cmd -Pack
 
-:: Pack with a version suffix (produces FloatAgent.1.2.0-preview.nupkg)
+:: Pack with a version suffix (produces FloatAgent.1.3.0-preview.nupkg)
 build.cmd -Pack -VersionSuffix preview
 
 :: Clean release\ / artifacts\ before publishing

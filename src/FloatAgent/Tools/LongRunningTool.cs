@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-using Floaticon.Services;
+using FloatAgent.Abstractions;
 
 namespace Floaticon.Tools;
 

@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using System.Windows;
 using Floaticon.Models;
 using Floaticon.Services;
+using FloatAgent.Abstractions;
 
 namespace Floaticon.ViewModels;
 

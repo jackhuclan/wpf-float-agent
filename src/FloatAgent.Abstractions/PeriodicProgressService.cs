@@ -1,9 +1,8 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-using Floaticon.Services;
 
-namespace Floaticon.Tools;
+namespace FloatAgent.Abstractions;
 
 /// <summary>
 /// 第三方长耗时任务的周期性进度包装器。
