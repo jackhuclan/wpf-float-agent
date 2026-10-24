@@ -1,0 +1,110 @@
+name: CI
+
+# 提交/PR 的常规校验：构建 + 打包冒烟。本仓库暂无测试工程，测试步骤留作扩展点。
+# 发布本身由 publish-nuget.yml 负责，两者互不阻塞。
+#
+# 纯文档提交不触发：仓库里 README/PRD 类提交约占一半，跑一遍完整编译没有信息量。
+# 注意 paths-ignore 只按「本次提交涉及的文件」判断——文档提交里一旦混进 .cs/.csproj，
+# 整条流水线照常跑，所以不必担心改 README 时顺手改的代码漏检。
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.workbuddy/**'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.workbuddy/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  build-and-pack:
+    name: Build and pack
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Report SDK
+        run: |
+          echo "::notice title=SDK version::$(dotnet --version)"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: |
+          set +e
+          dotnet restore Floaticon.slnx 2>&1 | tee restore.log
+          status="${PIPESTATUS[0]}"
+          if [[ "${status}" -ne 0 ]]; then
+            # 把报错行提升为 annotation，这样在 run 页面和 API 上都能直接看到原因。
+            grep -E "error|NU[0-9]{4}|MSB[0-9]{4}" restore.log | head -8 | while IFS= read -r line; do
+              echo "::error title=restore::${line}"
+            done
+            exit 1
+          fi
+
+      - name: Build
+        run: dotnet build Floaticon.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      # 打包冒烟：不推送（发布由 publish-nuget.yml 负责），只确认两个类库仍能产出包。
+      - name: Pack (smoke)
+        run: |
+          dotnet pack src/FloatAgent.Abstractions/FloatAgent.Abstractions.csproj -c Release --no-build -o artifacts
+          dotnet pack src/FloatAgent/FloatAgent.csproj -c Release --no-build -o artifacts
+
+      - name: Verify 2 packages
+        run: |
+          set -euo pipefail
+          count="$(find artifacts -name '*.nupkg' | wc -l)"
+          if [[ "${count}" -ne 2 ]]; then
+            echo "::error::期望 2 个 nupkg，实际 ${count} 个"
+            ls -1 artifacts
+            exit 1
+          fi
+          version="$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)"
+          for pkg in "FloatAgent.${version}.nupkg" "FloatAgent.Abstractions.${version}.nupkg"; do
+            if [[ ! -f "artifacts/${pkg}" ]]; then
+              echo "::error::缺少 artifacts/${pkg}（目录树内容：$(ls -1 artifacts | tr '\n' ' ')）"
+              exit 1
+            fi
+          done
+          echo "OK: 2 个类库包（FloatAgent / FloatAgent.Abstractions，版本 ${version}）" >> "${GITHUB_STEP_SUMMARY}"
+
+      # 本仓库暂无测试工程。后续补 xUnit/NUnit 工程后，在此加：
+      # dotnet test Floaticon.slnx -c Release --no-build

@@ -144,9 +144,12 @@ Version, author, project URL, description, and other project metadata are mainta
 
 > Note: `MdXaml` (2.0.0-pre) and `Microsoft.Agents.AI.Tools.Shell` (1.25.0-preview), which FloatAgent depends on, are pre-release packages, so packing stable NuGet packages raises NU5104 warnings. This does not affect package generation or usage.
 
-### NuGet auto-publish (CI)
+### CI / NuGet auto-publish (GitHub Actions)
 
-A GitHub Actions workflow ships with the repo: [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml). On every push to `main` (or a manual dispatch, or a published Release) it packs `FloatAgent` / `FloatAgent.Abstractions` automatically and publishes them to **GitHub Packages** (`https://nuget.pkg.github.com/jackhuclan/index.json`). Publishing the same version again is skipped, so only commits with a bumped version produce new packages.
+Two workflows ship with the repo:
+
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — **CI**: on every push to `main` or PR (documentation-only commits are skipped automatically) it runs Restore → Release build → pack smoke test (verifying both library packages are produced at the current version). It does not publish — verification only.
+- [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml) — **Publish**: on every push to `main` (or a manual dispatch, or a published Release) it packs `FloatAgent` / `FloatAgent.Abstractions` automatically and publishes them to **GitHub Packages** (`https://nuget.pkg.github.com/jackhuclan/index.json`). Publishing the same version again is skipped, so only commits with a bumped version produce new packages.
 
 Installing from GitHub Packages (a GitHub PAT is required, even for public packages):
 
