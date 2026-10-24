@@ -47,8 +47,14 @@ jobs:
         shell: pwsh
 
       - name: Push to GitHub Packages
-        run: dotnet nuget push "artifacts/*.nupkg" --source github --skip-duplicate
         shell: pwsh
+        run: |
+          # pwsh 不展开通配符，dotnet nuget push 也不支持 glob——显式枚举逐个推送
+          Get-ChildItem artifacts -Filter *.nupkg | ForEach-Object {
+            Write-Host "Pushing $($_.Name)"
+            dotnet nuget push $_.FullName --source github --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       - name: Upload packages as artifacts
         uses: actions/upload-artifact@v4
