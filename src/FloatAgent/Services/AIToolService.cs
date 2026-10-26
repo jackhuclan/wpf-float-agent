@@ -15,5 +15,10 @@ public class AIToolService : IAIToolService
         _tools[aIFunction.Name] = aIFunction;
     }
 
+    public void AddTool(Delegate method, string name, string description)
+    {
+        AddTool(AIFunctionFactory.Create(method, name, description));
+    }
+
     public IList<AITool> AsTools() => _tools.Values.ToList();
 }

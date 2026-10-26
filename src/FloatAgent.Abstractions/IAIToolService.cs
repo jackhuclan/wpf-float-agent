@@ -7,6 +7,7 @@ namespace FloatAgent.Abstractions;
 /// </summary>
 public interface IAIToolService
 {
+    void AddTool(Delegate method, string name, string description);
     void AddTool(AIFunction aIFunction);
     IList<AITool> AsTools();
 }
