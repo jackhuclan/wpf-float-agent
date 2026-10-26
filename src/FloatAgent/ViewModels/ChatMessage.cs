@@ -35,6 +35,16 @@ public partial class ChatMessage : ObservableObject
     [ObservableProperty]
     private string? _modelName;
 
+    /// <summary>消息时间（用户气泡悬浮时显示在复制按钮左侧）。</summary>
+    public DateTime Timestamp { get; init; } = DateTime.Now;
+
+    /// <summary>
+    /// 悬浮行显示的时间文本：今天只显示时刻「11:25」，昨天及以前带日期「10月24日 09:50」。
+    /// </summary>
+    public string TimeText => Timestamp.Date == DateTime.Today
+        ? Timestamp.ToString("HH:mm")
+        : Timestamp.ToString("M月d日 HH:mm");
+
     public bool HasUsage => Usage is not null;
 
     partial void OnUsageChanged(TokenUsage? value)

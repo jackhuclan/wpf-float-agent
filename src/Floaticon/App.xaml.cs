@@ -54,6 +54,7 @@ public partial class App : Application
         RegisterTools(_host.Services);
 
         _host.Services.GetRequiredService<FloatingBallWindow>().Show();
+
     }
 
     private static void ConfigureServices(IServiceCollection services)
