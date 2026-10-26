@@ -96,7 +96,9 @@ dotnet run --project src/Floaticon       # 或直接运行 src/Floaticon/bin/Deb
 3. 重新打包：`build.cmd -Pack`（或 `dotnet pack <proj> -c Release -o artifacts --nologo`），
    `artifacts/` 下只保留当前版本的 `FloatAgent.<版本>.nupkg` 与 `FloatAgent.Abstractions.<版本>.nupkg`。
 4. 同一批提交里包含：代码 + 文档 + 新 nupkg；提交信息中文 Conventional Commits，然后推送 `main`。
-5. 推送后 GitHub Actions 会自动跑 CI 与 publish-nuget（同版本重复推送会被跳过，所以版本号必须升）。
+5. 推送后 GitHub Actions 会自动跑 CI 与 publish-nuget。**publish-nuget 带版本门禁**：push 的最新提交若改了代码
+   （`src/`、`*.csproj`、`Directory.Packages.props`、`Directory.Build.props`、`Floaticon.slnx`）而没升 `<Version>`，
+   流水线直接失败；纯文档提交不受限，同版本重复推送由 `--skip-duplicate` 跳过。
 
 ## Git 约定
 

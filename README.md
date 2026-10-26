@@ -155,7 +155,7 @@ build.cmd -Clean
 仓库内置两个工作流：
 
 - [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — **CI**：推送到 `main` 或 PR 时（纯文档提交自动跳过）执行 Restore → Release 编译 → 打包冒烟（校验两个类库包按当前版本号产出）；不推送包，仅校验。
-- [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml) — **发布**：每次推送到 `main`（或手动触发、发布 Release）时，自动打包 `FloatAgent` / `FloatAgent.Abstractions` 并发布到 **GitHub Packages**（`https://nuget.pkg.github.com/jackhuclan/index.json`）。同版本重复发布会自动跳过，因此只有升了版本号的提交才会产生新包。
+- [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml) — **发布**：每次推送到 `main`（或手动触发、发布 Release）时，自动打包 `FloatAgent` / `FloatAgent.Abstractions` 并发布到 **GitHub Packages**（`https://nuget.pkg.github.com/jackhuclan/index.json`）。同版本重复发布会自动跳过；且带**版本门禁**——push 的最新提交若改了代码（`src/`、`*.csproj`、props、`Floaticon.slnx`）而没升 `Directory.Build.props` 的 `<Version>`，流水线直接失败，确保每次代码更新都会发布带新版本号的包。
 
 从 GitHub Packages 安装（需 GitHub PAT，public 包也要求认证）：
 
@@ -278,6 +278,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.3.2 | 2026-10-26 | publish-nuget 增加版本门禁：改代码不升版本号的推送直接失败，保证每次代码更新都发布带新版本号的 NuGet 包 |
 | 1.3.1 | 2026-10-26 | 修复用户气泡悬浮操作行：悬浮判定扩到整条消息行，指针从气泡移向复制按钮（含中间 4px 间隙）时按钮不再消失，可正常点击复制；复制按钮可点区域 26×18 |
 | 1.3.0 | 2026-10-24 | 版本元数据集中到 `Directory.Build.props`；新增 `run_container_code` 容器代码执行工具、`PeriodicProgressService` 工厂方法 |
 | 1.2.0 | 2026-10-24 | 三工程迁入 `src/`，新增英文 README、MIT LICENSE、GitHub Actions CI 与 NuGet 自动发布 |

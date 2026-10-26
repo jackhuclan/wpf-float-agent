@@ -2,6 +2,8 @@ name: publish-nuget
 
 # 每次推送到 main 或手动触发时：打包 NuGet 并发布到 GitHub Packages
 # （同版本重复发布会自动跳过，因此只有升了版本号的提交才会产生新包）
+# 版本门禁：push 的最新提交若改了代码（src / *.csproj / props / slnx）而没升
+# Directory.Build.props 的 <Version>，流水线直接失败——保证"每次更新代码都发布新版本包"。
 
 on:
   push:
@@ -21,7 +23,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # IncludeSourceRevisionInInformationalVersion 需要 git 历史
+          fetch-depth: 0   # IncludeSourceRevisionInInformationalVersion 与版本门禁都需要 git 历史
+
+      - name: Guard - code commits must bump version
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          function Get-PkgVersion([string]$sha) {
+            $content = @(git show "${sha}:Directory.Build.props")
+            foreach ($line in $content) {
+              if ($line -match '<Version>([^<]+)</Version>') { return $Matches[1] }
+            }
+            return $null
+          }
+
+          # 最近两个触碰代码路径的提交（HEAD 应是其中最新的一个）
+          $commits = @(git rev-list -n 2 HEAD -- src '*.csproj' Directory.Packages.props Directory.Build.props Floaticon.slnx) |
+            Where-Object { $_ -and $_.Trim() -ne '' }
+          $head = (git rev-parse HEAD).Trim()
+
+          if ($commits.Count -lt 2 -or $commits[0] -ne $head) {
+            Write-Host "本次推送没有新的代码提交（或历史不足），跳过版本检查。"
+            exit 0
+          }
+
+          $newVer = Get-PkgVersion $commits[0]
+          $oldVer = Get-PkgVersion $commits[1]
+          Write-Host "代码提交 $head 版本：$oldVer -> $newVer"
+
+          if ([string]::IsNullOrWhiteSpace($newVer) -or $newVer -eq $oldVer) {
+            Write-Host "::error title=版本号未升级::最新代码提交未修改 Directory.Build.props 的 <Version>（仍为 $oldVer）。按 AGENTS.md 发版流程必须升版本号，否则同版本包会被 --skip-duplicate 跳过、GitHub Packages 不会出现新包。"
+            exit 1
+          }
+          Write-Host "版本检查通过：$oldVer -> $newVer"
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4

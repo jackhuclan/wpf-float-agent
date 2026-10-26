@@ -155,7 +155,7 @@ Version, author, project URL, description, and other project metadata are mainta
 Two workflows ship with the repo:
 
 - [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — **CI**: on every push to `main` or PR (documentation-only commits are skipped automatically) it runs Restore → Release build → pack smoke test (verifying both library packages are produced at the current version). It does not publish — verification only.
-- [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml) — **Publish**: on every push to `main` (or a manual dispatch, or a published Release) it packs `FloatAgent` / `FloatAgent.Abstractions` automatically and publishes them to **GitHub Packages** (`https://nuget.pkg.github.com/jackhuclan/index.json`). Publishing the same version again is skipped, so only commits with a bumped version produce new packages.
+- [`.github/workflows/publish-nuget.yml`](.github/workflows/publish-nuget.yml) — **Publish**: on every push to `main` (or a manual dispatch, or a published Release) it packs `FloatAgent` / `FloatAgent.Abstractions` automatically and publishes them to **GitHub Packages** (`https://nuget.pkg.github.com/jackhuclan/index.json`). Publishing the same version again is skipped; a **version gate** also fails the pipeline when the latest pushed commit touches code (`src/`, `*.csproj`, props, `Floaticon.slnx`) without bumping `<Version>` in `Directory.Build.props`, guaranteeing every code update ships a new versioned package.
 
 Installing from GitHub Packages (a GitHub PAT is required, even for public packages):
 
@@ -278,6 +278,7 @@ The constructors are private — create instances through the `Create` factory m
 
 | Version | Date | Changes |
 | --- | --- | --- |
+| 1.3.2 | 2026-10-26 | publish-nuget adds a version gate: pushes that change code without bumping the version now fail, so every code update ships a new versioned NuGet package |
 | 1.3.1 | 2026-10-26 | Fixed the user bubble hover bar: the hover area now spans the whole message row, so the copy button no longer vanishes while moving from the bubble toward it (including the 4px gap); click target enlarged to 26×18 |
 | 1.3.0 | 2026-10-24 | Version metadata centralized in `Directory.Build.props`; added the `run_container_code` container execution tool and the `PeriodicProgressService` factory API |
 | 1.2.0 | 2026-10-24 | Three projects moved under `src/`, English README, MIT LICENSE, GitHub Actions CI and automatic NuGet publishing |
