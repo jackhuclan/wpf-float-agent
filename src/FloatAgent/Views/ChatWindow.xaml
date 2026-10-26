@@ -232,88 +232,100 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 用户气泡（靠右，蓝色）+ 悬浮时在下方露出的复制按钮 -->
-                <StackPanel x:Name="UserPanel"
-                            Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            MaxWidth="320"
-                            Margin="40,0,0,0"
-                            Visibility="Collapsed">
-                    <Border x:Name="UserBubble"
-                            CornerRadius="12,12,4,12"
-                            Background="#4F6BF5"
-                            Padding="12,8">
-                        <Border.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="复制" Command="{Binding CopyCommand}" />
-                            </ContextMenu>
-                        </Border.ContextMenu>
-                        <TextBlock Text="{Binding Text}"
-                                   FontSize="13"
-                                   Foreground="#FFFFFF"
-                                   TextWrapping="Wrap" />
-                    </Border>
-
-                    <!-- 操作行（时间 + 复制按钮）：默认隐藏，鼠标进入整个用户消息区域时显示，靠右对齐。
-                         整行位于外层 StackPanel 内部，从气泡移向按钮的过程中 IsMouseOver 不会中断，
-                         因此不会出现"一动鼠标就消失"的抖动。 -->
-                    <StackPanel x:Name="UserActions"
-                                Orientation="Horizontal"
+                <!-- 用户气泡（靠右，蓝色）+ 悬浮时在下方露出的时间/复制按钮。
+                     整条消息行用一层透明 Background 的 Border 兜住（命中测试需要非 null 的画笔，
+                     StackPanel 自身没有背景时，气泡与操作行之间的间隙不属于任何可命中元素，
+                     指针一进间隙 IsMouseOver 就变 false，按钮随即隐藏、点不到）。 -->
+                <Border x:Name="UserHoverArea"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Background="Transparent"
+                        Visibility="Collapsed">
+                    <StackPanel x:Name="UserPanel"
                                 HorizontalAlignment="Right"
-                                Margin="0,4,2,0">
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsMouseOver, ElementName=UserPanel}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
+                                MaxWidth="320"
+                                Margin="40,0,0,0">
+                        <Border x:Name="UserBubble"
+                                CornerRadius="12,12,4,12"
+                                Background="#4F6BF5"
+                                Padding="12,8">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="复制" Command="{Binding CopyCommand}" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <TextBlock Text="{Binding Text}"
+                                       FontSize="13"
+                                       Foreground="#FFFFFF"
+                                       TextWrapping="Wrap" />
+                        </Border>
 
-                        <!-- 时间：今天显示 11:25，跨天显示 10月24日 09:50 -->
-                        <TextBlock x:Name="UserTimeLabel"
-                                   Text="{Binding TimeText}"
-                                   FontSize="11"
-                                   Foreground="#9CA3AF"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,6,0" />
+                        <!-- 操作行（时间 + 复制按钮）：默认隐藏，指针进入整条消息行时显示，靠右对齐。
+                             外面再套一层带透明 Background + Padding 的 Border：气泡与按钮之间的 4px 间隙
+                             由这层 Border 的 Padding 区域承担命中测试，指针移向按钮时不会中断。 -->
+                        <Border x:Name="UserActionBar"
+                                HorizontalAlignment="Right"
+                                Background="Transparent"
+                                Padding="0,4,4,0">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsMouseOver, ElementName=UserHoverArea}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
 
-                        <Button x:Name="UserCopyButton"
-                                Command="{Binding CopyCommand}"
-                                ToolTip="复制"
-                                Cursor="Hand"
-                                Width="24" Height="14"
-                                VerticalAlignment="Center">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="CopyBg" CornerRadius="4" Background="Transparent">
-                                        <Grid Width="13" Height="13"
-                                              HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <Rectangle Width="9" Height="9" RadiusX="1.5" RadiusY="1.5"
-                                                       Stroke="#8A94A6" StrokeThickness="1.2"
-                                                       HorizontalAlignment="Right" VerticalAlignment="Bottom" />
-                                            <Rectangle Width="9" Height="9" RadiusX="1.5" RadiusY="1.5"
-                                                       Stroke="#8A94A6" StrokeThickness="1.2"
-                                                       HorizontalAlignment="Left" VerticalAlignment="Top" />
-                                        </Grid>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="CopyBg" Property="Background" Value="#E5E7EB" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
+                            <StackPanel x:Name="UserActions"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right">
+
+                                <!-- 时间：今天显示 11:25，跨天显示 10月24日 09:50 -->
+                                <TextBlock x:Name="UserTimeLabel"
+                                           Text="{Binding TimeText}"
+                                           FontSize="11"
+                                           Foreground="#9CA3AF"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,6,0" />
+
+                                <Button x:Name="UserCopyButton"
+                                        Command="{Binding CopyCommand}"
+                                        ToolTip="复制"
+                                        Cursor="Hand"
+                                        Width="26" Height="18"
+                                        VerticalAlignment="Center">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="CopyBg" CornerRadius="4" Background="Transparent">
+                                                <Grid Width="13" Height="13"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <Rectangle Width="9" Height="9" RadiusX="1.5" RadiusY="1.5"
+                                                               Stroke="#8A94A6" StrokeThickness="1.2"
+                                                               HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                                                    <Rectangle Width="9" Height="9" RadiusX="1.5" RadiusY="1.5"
+                                                               Stroke="#8A94A6" StrokeThickness="1.2"
+                                                               HorizontalAlignment="Left" VerticalAlignment="Top" />
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="CopyBg" Property="Background" Value="#E5E7EB" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </StackPanel>
+                </Border>
             </Grid>
 
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsUser}" Value="True">
-                    <Setter TargetName="UserPanel" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="UserHoverArea" Property="Visibility" Value="Visible" />
                 </DataTrigger>
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
