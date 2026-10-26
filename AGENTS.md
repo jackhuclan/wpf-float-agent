@@ -87,6 +87,17 @@ dotnet run --project src/Floaticon       # 或直接运行 src/Floaticon/bin/Deb
 - 配置窗 API Key 用 `PasswordBox` + `PasswordBoxBinding` 附加属性双向绑定
   （`PasswordBox.Password` 不是依赖属性，不能直接 Binding）。
 
+## 发版流程（每次代码改动必做，不给"只改代码"的提交）
+
+1. 改 `Directory.Build.props` 的 `<Version>`（修 bug → 补丁位 +1，新功能 → 次版本 +1）。
+2. 同步文档：
+   - `README.md` / `README.en.md`：功能特性表（新行为）、更新记录表（版本 + 日期 + 变更）、版本号相关的示例命令；
+   - `docs/Floaticon-PRD-v1.1.md`：对应 FR 条目与验收标准、文档「更新日期」、第 8 节版本历史新增一行。
+3. 重新打包：`build.cmd -Pack`（或 `dotnet pack <proj> -c Release -o artifacts --nologo`），
+   `artifacts/` 下只保留当前版本的 `FloatAgent.<版本>.nupkg` 与 `FloatAgent.Abstractions.<版本>.nupkg`。
+4. 同一批提交里包含：代码 + 文档 + 新 nupkg；提交信息中文 Conventional Commits，然后推送 `main`。
+5. 推送后 GitHub Actions 会自动跑 CI 与 publish-nuget（同版本重复推送会被跳过，所以版本号必须升）。
+
 ## Git 约定
 
 - 提交信息用中文 Conventional Commits：`feat(scope): …` / `fix(scope): …` / `docs: …`。

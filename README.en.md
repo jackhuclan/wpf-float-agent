@@ -29,6 +29,7 @@ Built on **.NET 10 WPF** and the **Microsoft Agent Framework (MAF)**, with zero 
 | Streaming chat | Token-by-token streaming; the body switches to live output as soon as the first chunk arrives; stop anytime while generating |
 | Markdown rendering | Headings, bold, code blocks, quotes, lists; compact layout (12px body text) |
 | Message toolbar | Each AI reply shows a copy button / `◇ N tokens used` / `⚡ model name` (usage accumulates across multi-turn tool calls) |
+| User message hover bar | Hovering a user bubble reveals `11:25` (or `10月24日 09:50` for older days) plus a copy button below it, right-aligned; the hover area spans the whole message row, so the button no longer disappears while you move toward it — click to copy the original text |
 | Model configuration | Three-field form + live required-field validation + **Test Connection** (clearly distinguishes success / auth failure / unreachable); saving takes effect immediately, no restart needed |
 | Skill system | `SKILL.md` files under the `skills/` directory are auto-discovered; the model loads them on demand via `load_skill` (progressive disclosure) |
 | Tool system | C# functions registered as AIFunctions through `IAIToolService`, invoked automatically by the Agent (`get_weather` / `run_long_task` / `run_container_code`) |
@@ -136,7 +137,7 @@ build.cmd
 :: Pack NuGet packages (FloatAgent, FloatAgent.Abstractions) into artifacts\
 build.cmd -Pack
 
-:: Pack with a version suffix (produces FloatAgent.1.3.0-preview.nupkg)
+:: Pack with a version suffix (produces FloatAgent.1.3.1-preview.nupkg)
 build.cmd -Pack -VersionSuffix preview
 
 :: Clean release\ / artifacts\ before publishing
@@ -273,9 +274,20 @@ The constructors are private — create instances through the `Create` factory m
 - With a Chinese IME, the first Enter commits the candidate text — this is expected; only the next Enter sends.
 - No single-instance enforcement; launching twice shows two floating balls.
 
+## Changelog
+
+| Version | Date | Changes |
+| --- | --- | --- |
+| 1.3.1 | 2026-10-26 | Fixed the user bubble hover bar: the hover area now spans the whole message row, so the copy button no longer vanishes while moving from the bubble toward it (including the 4px gap); click target enlarged to 26×18 |
+| 1.3.0 | 2026-10-24 | Version metadata centralized in `Directory.Build.props`; added the `run_container_code` container execution tool and the `PeriodicProgressService` factory API |
+| 1.2.0 | 2026-10-24 | Three projects moved under `src/`, English README, MIT LICENSE, GitHub Actions CI and automatic NuGet publishing |
+| 1.1.0 | 2026-10-23 | Long-running tool with progress reporting, skill system, tool injection, smooth wheel scrolling and streaming auto-follow |
+
+Release rule: **every code change updates both READMEs, the PRD and the version in `Directory.Build.props`, regenerates versioned NuGet packages into `artifacts\` with `build.cmd -Pack`, and commits/pushes all of them together** (publish-nuget skips duplicate versions, so the version must be bumped).
+
 ## Documentation
 
-- [Product Requirements (PRD) v1.1](docs/Floaticon-PRD-v1.1.md) (Chinese) · [docx archive (v1.0)](docs/Floaticon-PRD-v1.0.docx)
+- [Product Requirements (PRD) V1.3, file name kept at v1.1](docs/Floaticon-PRD-v1.1.md) (Chinese) · [docx archive (v1.0)](docs/Floaticon-PRD-v1.0.docx)
 
 ## License
 

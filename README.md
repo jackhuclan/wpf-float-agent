@@ -29,6 +29,7 @@
 | 流式对话 | 逐 token 推送，首块到达即切换正文；生成中可随时停止 |
 | Markdown 渲染 | 标题、加粗、代码块、引用、列表；Compact 紧凑排版（正文 12px） |
 | 消息工具栏 | 每条 AI 回复下方显示 复制按钮 / `◇ 共消耗 N tokens` / `⚡ 模型名`（工具调用多次往返时用量累加） |
+| 用户消息悬浮操作行 | 鼠标悬浮用户气泡时，气泡下方靠右露出 `11:25` 时间（跨天显示 `10月24日 09:50`）与复制按钮；悬浮判定覆盖整条消息行，指针移向按钮途中不会消失，点击即复制原文 |
 | 模型配置 | 三字段表单 + 实时必填校验 + **测试连接**（明确区分成功 / 鉴权失败 / 不可达）；保存即生效，无需重启 |
 | 技能系统 | `skills/` 目录下的 `SKILL.md` 自动加载，模型按需 `load_skill`（渐进式披露） |
 | 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task` / `run_container_code`） |
@@ -136,7 +137,7 @@ build.cmd
 :: 打包 NuGet 包（FloatAgent、FloatAgent.Abstractions），输出到根目录 artifacts\
 build.cmd -Pack
 
-:: 带版本后缀打包（生成 FloatAgent.1.3.0-preview.nupkg）
+:: 带版本后缀打包（生成 FloatAgent.1.3.1-preview.nupkg）
 build.cmd -Pack -VersionSuffix preview
 
 :: 先清理 release\ / artifacts\ 再发布
@@ -273,9 +274,20 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 - 中文输入法下首个 Enter 用于候选上屏属预期行为，上屏后的 Enter 才发送。
 - 未做单实例限制，重复启动会出现多个悬浮球。
 
+## 更新记录
+
+| 版本 | 日期 | 变更 |
+| --- | --- | --- |
+| 1.3.1 | 2026-10-26 | 修复用户气泡悬浮操作行：悬浮判定扩到整条消息行，指针从气泡移向复制按钮（含中间 4px 间隙）时按钮不再消失，可正常点击复制；复制按钮可点区域 26×18 |
+| 1.3.0 | 2026-10-24 | 版本元数据集中到 `Directory.Build.props`；新增 `run_container_code` 容器代码执行工具、`PeriodicProgressService` 工厂方法 |
+| 1.2.0 | 2026-10-24 | 三工程迁入 `src/`，新增英文 README、MIT LICENSE、GitHub Actions CI 与 NuGet 自动发布 |
+| 1.1.0 | 2026-10-23 | 长耗时工具与进度反馈、技能系统、工具注入、滚轮缓动与流式跟随 |
+
+发版约定：**每次代码改动同批更新 README（中/英）、PRD、`Directory.Build.props` 版本号，并用 `build.cmd -Pack` 重新产出 `artifacts\` 下的带版本号 NuGet 包，一并提交推送**（同版本重复推送会被 publish-nuget 自动跳过，所以必须升版本号）。
+
 ## 相关文档
 
-- [产品需求文档 PRD v1.1](docs/Floaticon-PRD-v1.1.md) · [docx 版（v1.0 存档）](docs/Floaticon-PRD-v1.0.docx)
+- [产品需求文档 PRD（V1.3，文件名沿用 v1.1）](docs/Floaticon-PRD-v1.1.md) · [docx 版（v1.0 存档）](docs/Floaticon-PRD-v1.0.docx)
 
 ## License
 
