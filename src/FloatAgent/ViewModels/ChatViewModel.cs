@@ -23,6 +23,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly IChatService _chatService;
     private readonly ToolProgressService _progress;
     private readonly ISessionStore _sessionStore;
+    private readonly ToolCallLog _toolLog;
     private ChatSession _session;
     private CancellationTokenSource? _cts;
 
@@ -44,11 +45,12 @@ public partial class ChatViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(NewSessionCommand))]
     private bool _isBusy;
 
-    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore)
+    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore, ToolCallLog toolLog)
     {
         _chatService = chatService;
         _progress = progress;
         _sessionStore = sessionStore;
+        _toolLog = toolLog;
 
         // 每次启动（或点"新建会话"）都开一次新会话：立即生成 guid 并按该 guid 落盘
         _session = _sessionStore.StartNewSession();
@@ -66,6 +68,7 @@ public partial class ChatViewModel : ObservableObject
 
         Messages.Clear();
         _session = _sessionStore.StartNewSession();
+        _toolLog.Clear();   // 工具执行日志以会话为边界
         Messages.Add(new ChatMessage(Greeting, isUser: false));
 
         Persist();

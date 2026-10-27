@@ -64,6 +64,7 @@ public partial class App : Application
         services.AddSingleton<IModelTester, OpenAIModelTester>();
 
         // 工具与技能
+        services.AddSingleton<ToolCallLog>();
         services.AddSingleton<IAIToolService, AIToolService>();
         services.AddSingleton<ToolProgressService>();
         services.AddSingleton<HttpClient>();

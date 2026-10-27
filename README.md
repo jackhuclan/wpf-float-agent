@@ -266,6 +266,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 - **右侧五个视图**（各自独立 UserControl + ViewModel）：Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters，顶部标签条切换。
 - 点击配方树中的配方，**Summary 显示「当前选择的配方是：***」**；Wafer Map 初始只有「Create Wafer Map」按钮，点击后生成晶圆映射；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save。
 - **AI 工具与技能打通**：`skills/alignment/` 内置配方拉平标准作业流程技能（选择配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具在 ViewModel 中注册——`select_recipe` / `open_alignment` 在 `MainViewModel`，其余 9 个（视图切换、找圆心、创建模版、粗/精定位、define_llc、save_recipe）在 `AlignmentViewModel`，均通过注入 `IAIToolService` 调用 `AddTool` 注册，工具在后台线程调用、经 `AppHelper.DispatcherInvoke` 投递到 UI 线程改界面状态，失败分支（视图不对 / 模版未创建）按真实规则拦截。
+- **工具执行日志**：所有工具调用自动写入会话内日志（时间/名称/参数/结果/耗时），模型可用内置的 `query_tool_history` 工具查证"某一步是否真的执行过"，不凭记忆断言调用历史。
 - 主窗打开时同时显示 FloatAgent 的悬浮球，点击悬浮球弹出聊天窗；技能放在 `src/RecipeDemo/skills/`，构建时复制到 exe 旁。
 
 ```bash
@@ -294,6 +295,7 @@ dotnet run --project src/RecipeDemo
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.7.0 | 2026-10-27 | 拉平技能依据实际运行反馈优化：核心原则新增"事实只认两个来源 / 被质疑先定事实不迎合 / 返回值如实引用"三条与对应反例（杜绝编造已完成、迎合式改口、凭印象转述）；新增工具执行日志：所有工具调用自动记录（时间/名称/参数/结果/耗时），内置 `query_tool_history` 工具供模型查证调用历史；新建会话时日志清空 |
 | 1.6.0 | 2026-10-27 | 会话自动保存：每次新对话按会话 guid 写 `sessions/<guid>.json`（ISessionStore / JsonSessionStore，原子覆盖写，含角色 / 正文 / 时间 / token 用量 / 模型名，标题取首条用户消息）；聊天窗标题栏新增「＋」新建会话按钮，换新 guid 开新文件；用户消息发送后与每轮问答结束即落盘 |
 | 1.5.0 | 2026-10-27 | RecipeDemo 打通技能与 AI 工具：内置 alignment 拉平作业流程技能（4 阶段 12 动作 + 人工确认卡点），新增 11 个工具（select_recipe / open_alignment / switch_to_edge_alignment / calculate_wafer_center / switch_to_coarse_alignment / create_recipe_template / run_coarse_align / switch_to_fine_alignment / run_fine_align / define_llc / save_recipe），由 MainViewModel / AlignmentViewModel 注入 IAIToolService 注册，后台线程调用经 Dispatcher 投递 UI 线程 |
 | 1.4.0 | 2026-10-27 | 新增 RecipeDemo 演示外壳：配方树（搜索/折叠/收起）+ Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters 五视图；点击配方 Summary 显示当前配方；Wafer Map 仅 Create Wafer Map 按钮；Alignment 为 Edge/Coarse/Fine 箭头子标签 + 右下角 Save；主窗打开时显示 FloatAgent 悬浮球；含 skills 目录 |

@@ -53,6 +53,7 @@ public partial class App : Application
     {
         services.AddSingleton<IConfigService, JsonConfigService>();
         services.AddSingleton<IModelTester, OpenAIModelTester>();
+        services.AddSingleton<ToolCallLog>();
         services.AddSingleton<IAIToolService, AIToolService>();
         services.AddSingleton<ToolProgressService>();
         services.AddSingleton<HttpClient>();

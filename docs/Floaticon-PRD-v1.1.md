@@ -3,7 +3,7 @@
 | 项目   | 内容                                                            |
 | ---- | ------------------------------------------------------------- |
 | 产品名称 | Floaticon（桌面悬浮 AI 助手）                                         |
-| 文档版本 | V1.6（文件名沿用 v1.1，保持外部链接稳定）                                        |
+| 文档版本 | V1.7（文件名沿用 v1.1，保持外部链接稳定）                                        |
 | 文档状态 | 已发布（对应已实现版本）                                                  |
 | 编写日期 | 2026-10-22                                                    |
 | 更新日期 | 2026-10-27                                                    |
@@ -276,6 +276,21 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 - [ ] 发送一条消息并收到回复后，文件含 assistant / user / assistant 三条且用量、模型名正确。
 - [ ] 点「＋」后产生新的 guid 与新文件，旧文件内容不变。
 
+### FR-12 工具执行日志与调用历史查证（P1）
+
+**需求描述**
+
+1. 所有经 `IAIToolService` 注册的 AI 工具由 `LoggedAIFunction` 包装：每次真实调用自动写入 `ToolCallLog`（DI 单例，会话内最多 200 条，超出淘汰最旧），记录时间 / 工具名 / 参数 / 结果 / 耗时 / 是否异常；被取消与抛异常的调用同样入日志。
+2. 内置工具 `query_tool_history(last = 10)`：返回最近 N 条调用的可读文本，供模型核实"某一步是否真的执行过、结果是什么"，替代凭记忆断言调用历史。
+3. 新建会话（启动或点「＋」）时 `ToolCallLog.Clear()`，日志以会话为边界。
+4. Floaticon 与 RecipeDemo 均注册 `ToolCallLog`；技能正文（alignment）配套新增核心原则 8–10：事实只认工具返回原文或用户明确告知、被质疑先定事实不迎合、返回值必须如实引用。
+
+**验收标准**
+
+- [ ] 工具注册清单含 `query_tool_history`，且与各 ViewModel 注册的工具并列可见。
+- [ ] 连续调用多个工具后，`query_tool_history` 按时间返回各次调用的参数与结果原文。
+- [ ] 清空（新会话）后查询返回"没有任何工具调用记录"。
+
 ## 5. 非功能需求
 
 | 编号     | 类别   | 需求                                                                                                                                                                                                             |
@@ -352,4 +367,5 @@ FloatAgent.Abstractions（接口类库，net10.0）
 | V1.3 交互修复与发版同步 | FR-05 第 5 项：用户气泡悬浮操作行的悬浮判定扩到整条消息行，指针从气泡移向复制按钮途经间隙时操作行不再消失、按钮可正常点击（可点区域 26×18）；版本升至 1.3.1，README（中/英）与 PRD、NuGet 包随代码同批更新发布 |
 | V1.4 RecipeDemo 演示外壳（衍生需求） | 新增独立演示工程 `src/RecipeDemo`（产线配方管理界面预演）：左侧配方树（关键字过滤 / Collapse 折叠 / 右缘蓝条收起）+ 右侧五个独立 UserControl+ViewModel 视图 Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters；点击配方树后 Summary 显示「当前选择的配方是：***」；Wafer Map 初始仅「Create Wafer Map」按钮；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save；RecipeDemo 引用 FloatAgent / FloatAgent.Abstractions，主窗打开时同步显示悬浮球（可弹出聊天窗）；自带 skills 目录（构建时复制到 exe 旁）；版本升至 1.4.0 |
 | V1.5 RecipeDemo 技能与 AI 工具打通 | 内置 `skills/alignment/` 配方拉平标准作业流程技能（4 阶段 12 动作：打开配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具由 ViewModel 注入 `IAIToolService` 并 `AddTool` 注册：`select_recipe` / `open_alignment`（MainViewModel，配方树查找与标签页切换）与其余 9 个（AlignmentViewModel：switch_to_edge/coarse/fine_alignment、calculate_wafer_center、create_recipe_template、run_coarse_align、run_fine_align、define_llc、save_recipe）；工具在后台线程调用，经 `AppHelper.DispatcherInvoke` 同步投递 UI 线程改 ObservableProperty；失败分支（视图不对 / 模版未创建 / 未选配方）按真实规则拦截；已真机验证 11 工具全链路（含失败分支）；版本升至 1.5.0 |
+| V1.7 拉平技能实测优化与工具执行日志 | 依据 2026-10-27 实际运行（会话 debe28a5）暴露的问题优化 alignment 技能：核心原则新增 8「事实只认两个来源」（最近一次工具返回原文或用户明确告知）、9「被质疑时先定事实，不迎合」（迎合式认错与编造同罪，用幂等重跑定事实）、10「返回值必须如实引用」（结果汇报不得写在工具返回之前，返回值不确定须重调确认）；反例补 3 条（迎合式改口 / 预期当结果 / 凭印象转述）；代码侧新增 FR-12 工具执行日志：`LoggedAIFunction` 包装所有注册工具，调用自动写 `ToolCallLog`（会话内 200 条上限），内置 `query_tool_history` 供模型查证调用历史，新建会话清空；alignment 的 SOP.md 与技能正文重复，不保留（如需人工操作卡后续放 docs/）；版本升至 1.7.0 |
 | V1.6 会话自动保存 | 新增 FR-11：每次新对话按会话 guid 持久化为运行目录 `sessions/<guid>.json`（ISessionStore / JsonSessionStore 单例，`.tmp` 原子替换覆盖写，目录自动创建）；内容含标题（首条用户消息前 24 字）与逐条 role / text / timestamp / token 用量 / 模型名；落盘时机为用户消息发送后与每轮问答结束（含停止 / 出错），失败只记日志不打断对话；聊天窗标题栏新增「＋」新建会话按钮（生成期间禁用，新 guid 新文件）；`sessions/` 加入 .gitignore；ChatSession.Messages 用 JsonObjectCreationHandling.Populate 保证反序列化可回填；已真机验证（启动即建文件 / 三消息完整 / 新会话换 guid 旧文件不变）；版本升至 1.6.0 |
