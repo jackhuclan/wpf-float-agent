@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using FloatAgent.Abstractions;
 using Floaticon.Models;
 using Floaticon.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Floaticon.ViewModels;
 
@@ -24,6 +25,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly ToolProgressService _progress;
     private readonly ISessionStore _sessionStore;
     private readonly ToolCallLog _toolLog;
+    private readonly ILogger<ChatViewModel> _logger;
     private ChatSession _session;
     private CancellationTokenSource? _cts;
 
@@ -45,12 +47,13 @@ public partial class ChatViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(NewSessionCommand))]
     private bool _isBusy;
 
-    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore, ToolCallLog toolLog)
+    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore, ToolCallLog toolLog, ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
         _progress = progress;
         _sessionStore = sessionStore;
         _toolLog = toolLog;
+        _logger = logger;
 
         // 每次启动（或点"新建会话"）都开一次新会话：立即生成 guid 并按该 guid 落盘
         _session = _sessionStore.StartNewSession();
@@ -86,8 +89,8 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            // 会话保存是旁路能力：磁盘满/权限不足时只丢日志，不打断对话
-            Debug.WriteLine($"[session] 保存失败：{ex.Message}");
+            // 会话保存是旁路能力：磁盘满/权限不足时只记日志，不打断对话
+            _logger.LogError(ex, "[session] 会话保存失败（文件：{File}）", _session.FileName);
         }
     }
 
