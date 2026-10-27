@@ -312,6 +312,7 @@ Release rule: **every code change updates both READMEs, the PRD and the version 
 ## Documentation
 
 - [Product Requirements (PRD) V1.3, file name kept at v1.1](docs/Floaticon-PRD-v1.1.md) (Chinese) · [docx archive (v1.0)](docs/Floaticon-PRD-v1.0.docx)
+- [Alignment skill flowchart (Mermaid: 4 stages, 12 actions, manual gates)](docs/alignment-flow.md) (Chinese)
 
 ## License
 

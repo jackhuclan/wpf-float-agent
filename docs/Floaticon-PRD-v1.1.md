@@ -338,6 +338,10 @@ FloatAgent.Abstractions（接口类库，net10.0）
 3. **工具进度旁路**：工具内 ToolProgressService.Report → ChatViewModel（Dispatcher 调度回 UI 线程）→ ChatMessage.Status → "正在输入"气泡下方实时刷新；首块正文到达即清除；与主流式链路互不阻塞。
 4. **配置链路**：ConfigViewModel → JsonConfigService.Save(config.json) → 内存 Current 立即更新 → 下次请求生效。
 
+### 6.3 拉平技能流程图
+
+RecipeDemo 的 alignment 技能（4 阶段 12 动作、含人工确认卡点）执行顺序与分支判定见 [alignment-flow.md](alignment-flow.md)（Mermaid，GitHub 直接渲染），该图为技能正文 `src/RecipeDemo/skills/alignment/SKILL.md` 的可视化整理，冲突时以技能正文为准。
+
 ## 7. 已知问题与风险
 
 | 编号   | 风险/问题                     | 影响                      | 缓解措施                                   |
