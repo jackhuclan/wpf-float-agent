@@ -2,6 +2,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Floaticon.Models;
+using Floaticon.Services;
 
 namespace Floaticon.ViewModels;
 
@@ -37,6 +38,35 @@ public partial class ChatMessage : ObservableObject
 
     /// <summary>消息时间（用户气泡悬浮时显示在复制按钮左侧）。</summary>
     public DateTime Timestamp { get; init; } = DateTime.Now;
+
+    // ---- 写操作确认卡（IsConfirmation=true 时，消息渲染为确认卡而不是聊天气泡） ----
+
+    /// <summary>本条消息是否为写操作确认卡。</summary>
+    [ObservableProperty]
+    private bool _isConfirmation;
+
+    /// <summary>确认卡标题（如「覆盖文件」「新建文件」）。</summary>
+    [ObservableProperty]
+    private string? _confirmationTitle;
+
+    /// <summary>确认卡详情（目标文件完整路径）。</summary>
+    [ObservableProperty]
+    private string? _confirmationPath;
+
+    /// <summary>将写入内容的预览。</summary>
+    [ObservableProperty]
+    private string? _confirmationPreview;
+
+    /// <summary>是否还在等待用户决定（决定后按钮隐藏、显示结果文本）。</summary>
+    [ObservableProperty]
+    private bool _confirmationPending;
+
+    /// <summary>决定结果文本（如「✅ 已同意」）。</summary>
+    [ObservableProperty]
+    private string? _confirmationOutcome;
+
+    /// <summary>关联的确认请求；按钮回调 Complete 放行或拦截工具线程。</summary>
+    public ConfirmationRequest? ConfirmationRequest { get; init; }
 
     /// <summary>
     /// 悬浮行显示的时间文本：今天只显示时刻「11:25」，昨天及以前带日期「10月24日 09:50」。

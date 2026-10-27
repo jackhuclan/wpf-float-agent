@@ -25,6 +25,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly ToolProgressService _progress;
     private readonly ISessionStore _sessionStore;
     private readonly ToolCallLog _toolLog;
+    private readonly IConfirmationService _confirmation;
     private readonly ILogger<ChatViewModel> _logger;
     private ChatSession _session;
     private CancellationTokenSource? _cts;
@@ -47,13 +48,17 @@ public partial class ChatViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(NewSessionCommand))]
     private bool _isBusy;
 
-    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore, ToolCallLog toolLog, ILogger<ChatViewModel> logger)
+    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore, ToolCallLog toolLog, IConfirmationService confirmation, ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
         _progress = progress;
         _sessionStore = sessionStore;
         _toolLog = toolLog;
+        _confirmation = confirmation;
         _logger = logger;
+
+        // 写操作确认：工具线程发来请求 → UI 线程插确认卡（见 OnConfirmationRequested）
+        _confirmation.Requested += OnConfirmationRequested;
 
         // 每次启动（或点"新建会话"）都开一次新会话：立即生成 guid 并按该 guid 落盘
         _session = _sessionStore.StartNewSession();
@@ -94,7 +99,7 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>用当前消息列表重建会话内容（跳过"正在输入"占位与空文本）。</summary>
+    /// <summary>把当前消息列表重建为会话内容（跳过"正在输入"占位与空文本）。</summary>
     private void SyncSession()
     {
         _session.Messages.Clear();
@@ -233,4 +238,56 @@ public partial class ChatViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     private void Stop() => _cts?.Cancel();
+
+    /// <summary>
+    /// 写操作确认：工具线程发来请求 → 调度到 UI 线程插入确认卡。
+    /// 卡片 Text 恒为空，SyncSession 会跳过，确认卡不入会话 json。
+    /// </summary>
+    private void OnConfirmationRequested(ConfirmationRequest request)
+    {
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null)
+        {
+            // 没有 UI 可展示（如无头环境）：直接拒绝，绝不静默放行
+            request.Complete(approved: false);
+            return;
+        }
+
+        dispatcher.Invoke(() =>
+        {
+            Messages.Add(new ChatMessage(string.Empty, isUser: false)
+            {
+                IsConfirmation = true,
+                ConfirmationRequest = request,
+                ConfirmationTitle = request.Title,
+                ConfirmationPath = request.Detail,
+                ConfirmationPreview = request.Preview,
+                ConfirmationPending = true,
+            });
+        });
+    }
+
+    /// <summary>确认卡「同意」：放行挂起的写操作。</summary>
+    [RelayCommand]
+    private void ApproveConfirmation(ChatMessage? message)
+    {
+        if (message is { ConfirmationPending: true, ConfirmationRequest: { } request })
+        {
+            message.ConfirmationPending = false;
+            message.ConfirmationOutcome = "✅ 已同意，工具继续执行";
+            request.Complete(approved: true);
+        }
+    }
+
+    /// <summary>确认卡「拒绝」：拦截挂起的写操作（工具将收到拒绝并如实告知模型）。</summary>
+    [RelayCommand]
+    private void DenyConfirmation(ChatMessage? message)
+    {
+        if (message is { ConfirmationPending: true, ConfirmationRequest: { } request })
+        {
+            message.ConfirmationPending = false;
+            message.ConfirmationOutcome = "❌ 已拒绝，未写入任何内容";
+            request.Complete(approved: false);
+        }
+    }
 }

@@ -54,7 +54,6 @@ public partial class App : Application
         RegisterTools(_host.Services);
 
         _host.Services.GetRequiredService<FloatingBallWindow>().Show();
-
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -70,6 +69,12 @@ public partial class App : Application
         services.AddSingleton<HttpClient>();
         services.AddSingleton<WeatherTool>();
         services.AddSingleton<LongRunningTool>();
+
+        // 内置文件工具：白名单校验 + 写前人工确认
+        services.AddSingleton<IConfirmationService, ConfirmationService>();
+        services.AddSingleton(sp => new WorkspaceScope(sp.GetRequiredService<IConfigService>(), AppContext.BaseDirectory));
+        services.AddSingleton<FileTools>();
+
         services.AddSingleton(sp => SkillProviderFactory.Create(sp.GetService<ILoggerFactory>()));
 
         // 聊天（AgentChatService 每次请求按当前配置重建 Agent，配置保存即生效）
@@ -95,6 +100,7 @@ public partial class App : Application
         var weather = services.GetRequiredService<WeatherTool>();
         var longRunning = services.GetRequiredService<LongRunningTool>();
         var progressService = services.GetRequiredService<ToolProgressService>();
+        var fileTools = services.GetRequiredService<FileTools>();
 
         // 显式委托类型保住方法上的 [Description]，模型才能拿到参数说明
         Func<string, string?, CancellationToken, Task<string>> getWeather = weather.GetWeatherAsync;
@@ -102,6 +108,13 @@ public partial class App : Application
 
         Func<string, CancellationToken, Task<string>> runLongTask = longRunning.RunAsync;
         registry.AddTool(AIFunctionFactory.Create(runLongTask, "run_long_task"));
+
+        // 内置文件工具：读取（行号分页）/ 写入（写前人工确认）
+        Func<string, int, int, CancellationToken, Task<string>> readFile = fileTools.ReadFileAsync;
+        registry.AddTool(AIFunctionFactory.Create(readFile, "read_file"));
+
+        Func<string, string?, CancellationToken, Task<string>> writeFile = fileTools.WriteFileAsync;
+        registry.AddTool(AIFunctionFactory.Create(writeFile, "write_file"));
 
         // 验证 PeriodicProgressService：模拟一个内部无法上报进度的第三方长耗时任务，
         // 由包装器在等待侧周期上报（开始 1 次 + 每 5 秒 1 次 + 完成 1 次）

@@ -16,6 +16,13 @@ public sealed class ModelConfig
     /// <summary>OpenAI 兼容的接口地址，例如 https://api.deepseek.com/v1。</summary>
     public string Endpoint { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 文件工具（read_file / write_file）的附加工作区根目录（可选，默认仅 exe 目录）。
+    /// 相对/绝对路径均可；保存时未配置则不写出该字段。
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? WorkspaceRoots { get; set; }
+
     [JsonIgnore]
     public bool IsValid =>
         !string.IsNullOrWhiteSpace(ApiKey) &&

@@ -3,8 +3,10 @@ using System.Net.Http;
 using System.Windows;
 using FloatAgent.Abstractions;
 using Floaticon.Services;
+using Floaticon.Tools;
 using Floaticon.ViewModels;
 using Floaticon.Views;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -42,6 +44,9 @@ public partial class App : Application
         // 类库内的视图（ChatWindow 打开配置窗）通过 ServiceLocator 解析瞬时服务
         ServiceLocator.Services = _host.Services;
 
+        // 内置工具（read_file / write_file 等），与 Floaticon 宿主一致
+        RegisterBuiltinTools(_host.Services);
+
         // 主窗：配方树 + Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters
         _host.Services.GetRequiredService<MainWindow>().Show();
 
@@ -64,6 +69,11 @@ public partial class App : Application
         // 会话持久化：每个会话一个 sessions/<guid>.json
         services.AddSingleton<ISessionStore, JsonSessionStore>();
 
+        // 内置文件工具：白名单校验 + 写前人工确认（与 Floaticon 宿主一致）
+        services.AddSingleton<IConfirmationService, ConfirmationService>();
+        services.AddSingleton(sp => new WorkspaceScope(sp.GetRequiredService<IConfigService>(), AppContext.BaseDirectory));
+        services.AddSingleton<FileTools>();
+
         // 聊天窗 Hide 复用，必须是单例；配置窗 Close 后不可复用，用瞬时
         services.AddSingleton<ChatViewModel>();
         services.AddSingleton<ChatWindow>();
@@ -79,6 +89,20 @@ public partial class App : Application
         services.AddSingleton<RecipeRunParametersViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
+    }
+
+    /// <summary>把 FloatAgent 内置工具注册进工具表（RecipeDemo 的业务工具由各 ViewModel 自行注册）。</summary>
+    private static void RegisterBuiltinTools(IServiceProvider services)
+    {
+        var registry = services.GetRequiredService<IAIToolService>();
+        var fileTools = services.GetRequiredService<FileTools>();
+
+        // 显式委托类型保住方法上的 [Description]，模型才能拿到参数说明
+        Func<string, int, int, CancellationToken, Task<string>> readFile = fileTools.ReadFileAsync;
+        registry.AddTool(AIFunctionFactory.Create(readFile, "read_file"));
+
+        Func<string, string?, CancellationToken, Task<string>> writeFile = fileTools.WriteFileAsync;
+        registry.AddTool(AIFunctionFactory.Create(writeFile, "write_file"));
     }
 
     protected override void OnExit(ExitEventArgs e)

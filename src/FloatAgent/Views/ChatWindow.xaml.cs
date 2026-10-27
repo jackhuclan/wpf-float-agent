@@ -18,11 +18,23 @@ public partial class ChatWindow : Window
     /// <summary>距底部这个距离内视为"跟随底部"。</summary>
     private const double FollowThreshold = 96.0;
 
-    public ChatWindow(ChatViewModel viewModel)
+    public ChatWindow(ChatViewModel viewModel, IConfirmationService confirmation)
     {
         InitializeComponent();
         DataContext = viewModel;
         MessagesList.ItemsSource = viewModel.Messages;
+
+        // 写操作确认请求到达时，聊天窗若被隐藏（收起到悬浮球）则自动弹出并置前，
+        // 保证确认卡一定被用户看到
+        confirmation.Requested += _ => Dispatcher.Invoke(() =>
+        {
+            if (!IsVisible)
+            {
+                Show();
+            }
+
+            Activate();
+        });
 
         // 新消息：滚到底部
         ((INotifyCollectionChanged)viewModel.Messages).CollectionChanged += (_, e) =>

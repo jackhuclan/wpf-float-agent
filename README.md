@@ -36,6 +36,7 @@
 | 滚动体验 | 6px 细滚动条、像素滚动、滚轮 170ms ease-out 缓动、流式期间智能跟随底部 |
 | 工具进度反馈 | 长耗时工具执行期间实时上报进度（如 `⚡ run_long_task 执行中… 60 / 120 秒`），显示在“正在输入”气泡下方，不再干等 |
 | 会话自动保存 | 每次新对话自动以会话 guid 命名，整会话写入运行目录 `sessions/<guid>.json`（原子覆盖写，含消息角色 / 正文 / 时间 / token 用量 / 模型名）；聊天窗标题栏「＋」一键开新会话（新 guid 新文件） |
+| 内置文件工具 | `read_file`：带行号分页读取白名单内文本文件（默认 2000 行可续读，单行截断，二进制/超大拒绝）；`write_file`：写前在聊天窗弹确认卡（路径 + 内容预览 + 同意/拒绝），同意后整文件覆盖写入（自动建父目录，UTF-8 无 BOM）。访问范围 = 运行目录 + `config.json` 的 `WorkspaceRoots`（改配置即生效），`config.json` 自身（含 API Key）读写都拒，防 `..` 穿越 |
 | 多屏适配 | PerMonitorV2 DPI 感知，弹窗位置夹取到当前工作区内 |
 
 ## 技术架构
@@ -295,6 +296,7 @@ dotnet run --project src/RecipeDemo
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.8.0 | 2026-10-27 | 新增内置文件工具：`read_file`（带行号分页读，单行截断，二进制/超 10MB 拒绝）与 `write_file`（写前聊天窗确认卡人工放行，同意后覆盖写 + 自动建父目录，UTF-8 无 BOM）；`WorkspaceScope` 白名单（运行目录 + `config.json` 可选 `WorkspaceRoots`，动态生效），`config.json` 读写都拒防 API Key 泄露；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子双验证 |
 | 1.7.2 | 2026-10-27 | 会话保存失败改用标准日志：ChatViewModel 注入 `ILogger<ChatViewModel>`（Microsoft.Extensions.Logging），Persist 失败由 Debug.WriteLine 升级为 `LogError`（含会话文件名与完整异常），宿主 Host builder 默认日志管道（Debug/Console/EventSource）自动接住 |
 | 1.7.1 | 2026-10-27 | 美化聊天窗标题栏按钮 hover 效果：＋/⚙ 悬停改为半透明白叠加（按下加深），关闭按钮悬停改 Windows 惯例红色高亮并转白字；配置窗关闭按钮同步修复，不再出现与靛蓝标题栏撞色的系统默认灰色高亮 |
 | 1.7.0 | 2026-10-27 | 拉平技能依据实际运行反馈优化：核心原则新增"事实只认两个来源 / 被质疑先定事实不迎合 / 返回值如实引用"三条与对应反例（杜绝编造已完成、迎合式改口、凭印象转述）；新增工具执行日志：所有工具调用自动记录（时间/名称/参数/结果/耗时），内置 `query_tool_history` 工具供模型查证调用历史；新建会话时日志清空 |
