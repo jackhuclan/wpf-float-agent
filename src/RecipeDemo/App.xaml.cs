@@ -8,6 +8,7 @@ using Floaticon.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RecipeDemo.ViewModels;
 using RecipeDemo.Views;
 
 namespace RecipeDemo;
@@ -66,7 +67,13 @@ public partial class App : Application
         services.AddTransient<ConfigViewModel>();
         services.AddTransient<ConfigWindow>();
 
-        // 演示用主窗
+        // 演示用主窗：五个视图各自独立，作为单例注入（工具在构造时注册到 IAIToolService）
+        services.AddSingleton<SummaryViewModel>();
+        services.AddSingleton<WaferMapViewModel>();
+        services.AddSingleton<AlignmentViewModel>();
+        services.AddSingleton<TestsViewModel>();
+        services.AddSingleton<RecipeRunParametersViewModel>();
+        services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }
 

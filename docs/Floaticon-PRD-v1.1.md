@@ -3,7 +3,7 @@
 | 项目   | 内容                                                            |
 | ---- | ------------------------------------------------------------- |
 | 产品名称 | Floaticon（桌面悬浮 AI 助手）                                         |
-| 文档版本 | V1.3（文件名沿用 v1.1，保持外部链接稳定）                                        |
+| 文档版本 | V1.5（文件名沿用 v1.1，保持外部链接稳定）                                        |
 | 文档状态 | 已发布（对应已实现版本）                                                  |
 | 编写日期 | 2026-10-22                                                    |
 | 更新日期 | 2026-10-27                                                    |
@@ -334,3 +334,4 @@ FloatAgent.Abstractions（接口类库，net10.0）
 | V1.2 容器与工程化 | 新增 FR-08 第 7 项 run_container_code（DockerShellExecutor 一次性 Linux 容器执行 C#/Python/JS，离线编译、网络隔离、周期进度上报）；PeriodicProgressService 构造函数私有化、改由 Create 工厂创建；工程元数据集中到 Directory.Build.props（版本 1.2.0→1.3.0）；新增 build.cmd/build.ps1（win-x64 自包含单文件发布 + NuGet 打包到 artifacts）；新增 GitHub Actions CI 与 NuGet 自动发布、MIT LICENSE、英文 README；三工程目录迁入 src/ |
 | V1.3 交互修复与发版同步 | FR-05 第 5 项：用户气泡悬浮操作行的悬浮判定扩到整条消息行，指针从气泡移向复制按钮途经间隙时操作行不再消失、按钮可正常点击（可点区域 26×18）；版本升至 1.3.1，README（中/英）与 PRD、NuGet 包随代码同批更新发布 |
 | V1.4 RecipeDemo 演示外壳（衍生需求） | 新增独立演示工程 `src/RecipeDemo`（产线配方管理界面预演）：左侧配方树（关键字过滤 / Collapse 折叠 / 右缘蓝条收起）+ 右侧五个独立 UserControl+ViewModel 视图 Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters；点击配方树后 Summary 显示「当前选择的配方是：***」；Wafer Map 初始仅「Create Wafer Map」按钮；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save；RecipeDemo 引用 FloatAgent / FloatAgent.Abstractions，主窗打开时同步显示悬浮球（可弹出聊天窗）；自带 skills 目录（构建时复制到 exe 旁）；版本升至 1.4.0 |
+| V1.5 RecipeDemo 技能与 AI 工具打通 | 内置 `skills/alignment/` 配方拉平标准作业流程技能（4 阶段 12 动作：打开配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具由 ViewModel 注入 `IAIToolService` 并 `AddTool` 注册：`select_recipe` / `open_alignment`（MainViewModel，配方树查找与标签页切换）与其余 9 个（AlignmentViewModel：switch_to_edge/coarse/fine_alignment、calculate_wafer_center、create_recipe_template、run_coarse_align、run_fine_align、define_llc、save_recipe）；工具在后台线程调用，经 `AppHelper.DispatcherInvoke` 同步投递 UI 线程改 ObservableProperty；失败分支（视图不对 / 模版未创建 / 未选配方）按真实规则拦截；已真机验证 11 工具全链路（含失败分支）；版本升至 1.5.0 |

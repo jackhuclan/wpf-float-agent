@@ -10,10 +10,6 @@
         Background="#F5F6F8"
         FontFamily="Microsoft YaHei UI">
 
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
-
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 

@@ -282,6 +282,7 @@ The constructors are private — create instances through the `Create` factory m
 - **Left recipe tree**: search box filters by name; the Collapse button beside the "Recipes" root collapses everything; a small blue tab on the right edge hides/shows the panel.
 - **Five views on the right** (each an independent UserControl + ViewModel): Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters, switched via the top tab bar.
 - Clicking a recipe in the tree makes **Summary show "当前选择的配方是：***"** (the currently selected recipe); Wafer Map initially only shows a "Create Wafer Map" button that renders the wafer map on click; Alignment hosts arrow-shaped sub-tabs Edge / Coarse / Fine (Caculate, Create Template + Run) with a Save button at the bottom-right.
+- **Skills wired to AI tools**: `skills/alignment/` ships the standard recipe alignment workflow (select recipe → wafer center → coarse → fine → Updating LLC → save, with human-confirmation gates). The 11 matching AI tools are registered in the ViewModels — `select_recipe` / `open_alignment` in `MainViewModel`, the other 9 (view switching, wafer center, template creation, coarse/fine align, define_llc, save_recipe) in `AlignmentViewModel` — via constructor-injected `IAIToolService.AddTool`. Tools are invoked on background threads and marshal UI state changes through `AppHelper.DispatcherInvoke`; failure branches (wrong view / missing template) are enforced like real rules.
 - When the main window opens, the FloatingBall from FloatAgent is shown as well; clicking the ball opens the chat window. Skills live in `src/RecipeDemo/skills/` and are copied next to the exe at build time.
 
 ```bash
@@ -292,6 +293,7 @@ dotnet run --project src/RecipeDemo
 
 | Version | Date | Changes |
 | --- | --- | --- |
+| 1.5.0 | 2026-10-27 | RecipeDemo skills wired to AI tools: the alignment workflow skill (4 stages / 12 actions with human-confirmation gates) plus 11 tools (select_recipe / open_alignment / switch_to_edge_alignment / calculate_wafer_center / switch_to_coarse_alignment / create_recipe_template / run_coarse_align / switch_to_fine_alignment / run_fine_align / define_llc / save_recipe) registered by MainViewModel / AlignmentViewModel via IAIToolService; background-thread tool calls marshal UI updates through the Dispatcher |
 | 1.4.0 | 2026-10-27 | Added the RecipeDemo demo shell: recipe tree (search/collapse/hide) + Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters views; clicking a recipe updates Summary; Wafer Map reduced to a Create Wafer Map button; Alignment hosts Edge/Coarse/Fine arrow sub-tabs with Save; the FloatAgent floating ball shows alongside the main window; ships with a skills folder |
 | 1.3.2 | 2026-10-26 | publish-nuget adds a version gate: pushes that change code without bumping the version now fail, so every code update ships a new versioned NuGet package |
 | 1.3.1 | 2026-10-26 | Fixed the user bubble hover bar: the hover area now spans the whole message row, so the copy button no longer vanishes while moving from the bubble toward it (including the 4px gap); click target enlarged to 26×18 |

@@ -1,13 +1,16 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FloatAgent.Abstractions;
 using RecipeDemo.Models;
+using RecipeDemo.Helpers;
 
 namespace RecipeDemo.ViewModels;
 
 /// <summary>
 /// 主窗视图模型：左侧配方树（搜索过滤 / 折叠）+ 右侧五个标签页视图切换。
 /// 点击左侧配方树中的配方后，Summary 视图显示「当前选择的配方是：***」。
+/// AI 工具（select_recipe / open_alignment）注册与实现见 MainViewModel.Tools.cs。
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
@@ -36,22 +39,42 @@ public partial class MainViewModel : ObservableObject
     private string selectedRecipeName = string.Empty;
 
     /// <summary>顶部标签页集合（Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters）。</summary>
-    public ObservableCollection<TabViewModel> Tabs { get; } =
-    [
-        new SummaryViewModel(),
-        new WaferMapViewModel(),
-        new AlignmentViewModel(),
-        new TestsViewModel(),
-        new RecipeRunParametersViewModel(),
-    ];
+    public ObservableCollection<TabViewModel> Tabs { get; }
 
     [ObservableProperty]
     private TabViewModel? selectedTab;
 
-    public SummaryViewModel Summary => (SummaryViewModel)Tabs[0];
+    public SummaryViewModel Summary { get; }
 
-    public MainViewModel()
+    public WaferMapViewModel WaferMap { get; }
+
+    public AlignmentViewModel Alignment { get; }
+
+    public TestsViewModel Tests { get; }
+
+    public RecipeRunParametersViewModel RunParameters { get; }
+
+    private readonly IAIToolService _toolService;
+
+    public MainViewModel(
+        IAIToolService toolService,
+        SummaryViewModel summary,
+        WaferMapViewModel waferMap,
+        AlignmentViewModel alignment,
+        TestsViewModel tests,
+        RecipeRunParametersViewModel runParameters)
     {
+        _toolService = toolService;
+        Summary = summary;
+        WaferMap = waferMap;
+        Alignment = alignment;
+        Tests = tests;
+        RunParameters = runParameters;
+        Tabs = [summary, waferMap, alignment, tests, runParameters];
+
+        // 切换 Alignment 子视图的 AI 工具需要把 Alignment 标签页提到前台
+        Alignment.ActivateRequested = () => SelectedTab = Alignment;
+
         var root = new RecipeNode("Recipes", isFolder: true, children: BuildDemoTree())
         {
             IsRoot = true,
@@ -59,6 +82,8 @@ public partial class MainViewModel : ObservableObject
         };
         RootNodes.Add(root);
         SelectedTab = Tabs[0];
+
+        RegisterTools();
     }
 
     /// <summary>对照参考图构造演示配方树。</summary>
@@ -105,6 +130,7 @@ public partial class MainViewModel : ObservableObject
 
         SelectedRecipeName = name;
         Summary.SetRecipe(name);
+        Alignment.SetRecipe(name);
         SelectedTab = Tabs[0];   // 切到 Summary
     }
 

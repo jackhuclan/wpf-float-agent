@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using RecipeDemo.Models;
 using RecipeDemo.ViewModels;
 
@@ -11,9 +10,10 @@ namespace RecipeDemo.Views;
 /// </summary>
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        DataContext = viewModel;
     }
 
     /// <summary>TreeView 不支持 SelectedItem 双向绑定，用事件把选中节点转给 ViewModel。</summary>

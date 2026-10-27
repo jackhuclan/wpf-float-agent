@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FloatAgent.Abstractions;
 
 namespace RecipeDemo.ViewModels;
 
@@ -64,39 +65,93 @@ public partial class WaferMapViewModel : TabViewModel
     private void CreateWaferMap() => IsMapVisible = true;
 }
 
-/// <summary>Alignment 视图：Edge / Coarse / Fine 三个对准子页 + 右下角 Save。</summary>
+/// <summary>
+/// Alignment 视图：Edge / Coarse / Fine 三个对准子页 + 右下角 Save。
+/// AI 工具（拉平技能）注册与实现见 AlignmentViewModel.Tools.cs。
+/// </summary>
 public partial class AlignmentViewModel : TabViewModel
 {
-    /// <summary>操作反馈日志（demo：每次点击按钮追加一行）。</summary>
+    /// <summary>当前配方（由 MainViewModel 在选择配方时同步，save_recipe 用）。</summary>
+    public string CurrentRecipeName { get; private set; } = "—";
+
+    /// <summary>操作反馈日志（demo：每次操作追加一行）。</summary>
     [ObservableProperty]
     private string log = "点击上方按钮查看操作反馈。";
 
-    public AlignmentViewModel() : base("Alignment")
+    /// <summary>当前子页：0 = Edge，1 = Coarse，2 = Fine（双向绑定 TabControl.SelectedIndex）。</summary>
+    [ObservableProperty]
+    private int selectedSubTabIndex;
+
+    /// <summary>Edge 页找到的圆心（null 表示尚未找到）。</summary>
+    [ObservableProperty]
+    private string? waferCenter;
+
+    /// <summary>Coarse / Fine 各自的配方模版是否已创建。</summary>
+    [ObservableProperty]
+    private bool hasCoarseTemplate;
+
+    [ObservableProperty]
+    private bool hasFineTemplate;
+
+    /// <summary>粗定位 / 精定位是否已成功。</summary>
+    [ObservableProperty]
+    private bool hasCoarseAligned;
+
+    [ObservableProperty]
+    private bool hasFineAligned;
+
+    /// <summary>Updating LLC 是否已完成。</summary>
+    [ObservableProperty]
+    private bool hasLlcDefined;
+
+    private readonly IAIToolService _toolService;
+
+    public AlignmentViewModel(IAIToolService toolService) : base("Alignment")
     {
+        _toolService = toolService;
+        RegisterTools();
+    }
+
+    /// <summary>需要把 Alignment 标签页切到前台时触发（切换子视图的工具用）。</summary>
+    internal Action? ActivateRequested { get; set; }
+
+    /// <summary>配方切换时由 MainViewModel 调用：重置对准状态。</summary>
+    public void SetRecipe(string name)
+    {
+        CurrentRecipeName = name;
+        WaferCenter = null;
+        HasCoarseTemplate = false;
+        HasFineTemplate = false;
+        HasCoarseAligned = false;
+        HasFineAligned = false;
+        HasLlcDefined = false;
+        ResetLog();
     }
 
     /// <summary>Edge Alignment 页的 Caculate 按钮。</summary>
     [RelayCommand]
-    private void Caculate() => AppendLog("[Edge Alignment] Caculate 完成。");
+    private void Caculate() => AppendLog(CalculateWaferCenter());
 
     [RelayCommand]
-    private void CreateCoarseTemplate() => AppendLog("[Coarse Alignment] Create Template 完成。");
+    private void CreateCoarseTemplate() => AppendLog(CreateTemplate());
 
     [RelayCommand]
-    private void RunCoarse() => AppendLog("[Coarse Alignment] Run 完成。");
+    private void RunCoarse() => AppendLog(RunCoarseAlign());
 
     [RelayCommand]
-    private void CreateFineTemplate() => AppendLog("[Fine Alignment] Create Template 完成。");
+    private void CreateFineTemplate() => AppendLog(CreateTemplate());
 
     [RelayCommand]
-    private void RunFine() => AppendLog("[Fine Alignment] Run 完成。");
+    private void RunFine() => AppendLog(RunFineAlign());
 
     /// <summary>右下角 Save 按钮：保存对准参数。</summary>
     [RelayCommand]
-    private void Save() => AppendLog("[Save] 对准参数已保存。");
+    private void Save() => AppendLog(SaveRecipe());
 
     private void AppendLog(string message) =>
         Log = Log is "点击上方按钮查看操作反馈。" or "" ? message : $"{Log}{Environment.NewLine}{message}";
+
+    private void ResetLog() => Log = "点击上方按钮查看操作反馈。";
 }
 
 /// <summary>单条测试项。</summary>

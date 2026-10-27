@@ -84,7 +84,8 @@
             <TabControl Background="Transparent"
                         BorderThickness="0"
                         Margin="6,0,0,0"
-                        Padding="0">
+                        Padding="0"
+                        SelectedIndex="{Binding SelectedSubTabIndex, Mode=TwoWay}">
                 <!-- Edge Alignment：Caculate -->
                 <TabItem Header="Edge Alignment">
                     <StackPanel Margin="16,14">
