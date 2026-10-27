@@ -33,6 +33,9 @@ public sealed class ChatSession
     /// <summary>会话标题：取第一条用户消息的前若干字符，空会话为「新会话」。</summary>
     public string Title { get; set; } = "新会话";
 
+    /// <summary>标题是否已被用户手动重命名（真则 SyncSession 不再用首条消息覆盖标题）。</summary>
+    public bool TitleLocked { get; set; }
+
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;

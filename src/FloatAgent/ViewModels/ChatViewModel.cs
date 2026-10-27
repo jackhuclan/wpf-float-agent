@@ -32,6 +32,9 @@ public partial class ChatViewModel : ObservableObject
 
     public ObservableCollection<ChatMessage> Messages { get; } = [];
 
+    /// <summary>会话抽屉（历史会话列表）的 ViewModel，由 ChatWindow 的抽屉面板消费。</summary>
+    public SessionHistoryViewModel History { get; }
+
     /// <summary>当前会话 guid（即会话 json 的文件名）。</summary>
     public string SessionId => _session.SessionId;
 
@@ -61,7 +64,27 @@ public partial class ChatViewModel : ObservableObject
         _confirmation.Requested += OnConfirmationRequested;
 
         // 每次启动（或点"新建会话"）都开一次新会话：立即生成 guid 并按该 guid 落盘
-        _session = _sessionStore.StartNewSession();
+        History = new SessionHistoryViewModel(
+            sessionStore,
+            openSession: OpenSessionCore,
+            createNew: () =>
+            {
+                if (!IsBusy)
+                {
+                    NewSession();
+                }
+            },
+            deleteSession: DeleteSessionCore,
+            renameSession: (id, title) =>
+            {
+                if (_session.SessionId == id)
+                {
+                    _session.Title = title;
+                    _session.TitleLocked = true;
+                }
+            });
+
+        _session = sessionStore.StartNewSession();
         Messages.Add(new ChatMessage(Greeting, isUser: false));
         Persist();
     }
@@ -82,6 +105,77 @@ public partial class ChatViewModel : ObservableObject
         Persist();
         OnPropertyChanged(nameof(SessionId));
         OnPropertyChanged(nameof(SessionFilePath));
+        History.Refresh(_session.SessionId);
+    }
+
+    /// <summary>打开一个历史会话（抽屉列表项点击）：保存当前会话后载入并回填消息区。</summary>
+    private void OpenSessionCore(string sessionId)
+    {
+        if (IsBusy || sessionId == _session.SessionId)
+        {
+            return;
+        }
+
+        var loaded = _sessionStore.Load(sessionId);
+        if (loaded is null)
+        {
+            return;     // 文件不存在或损坏：保持当前会话不变
+        }
+
+        Persist();      // 先保存当前会话再切换
+        _session = loaded;
+
+        Messages.Clear();
+        if (loaded.Messages.Count == 0)
+        {
+            Messages.Add(new ChatMessage(Greeting, isUser: false));
+        }
+
+        foreach (var m in loaded.Messages)
+        {
+            Messages.Add(new ChatMessage(m.Text, m.Role == "user")
+            {
+                Timestamp = m.Timestamp,
+                Usage = m.TotalTokens is int tokens ? new TokenUsage(0, 0, tokens, m.Model) : null,
+                ModelName = m.Model,
+            });
+        }
+
+        OnPropertyChanged(nameof(SessionId));
+        OnPropertyChanged(nameof(SessionFilePath));
+        History.Refresh(_session.SessionId);
+    }
+
+    /// <summary>删除会话（FR-4.5/4.9）：删除当前会话则自动切换到最新的一条，列表空则新建。</summary>
+    private void DeleteSessionCore(string sessionId)
+    {
+        // 生成中不允许删当前会话（避免流式回复往已删除的文件写）
+        if (IsBusy && sessionId == _session.SessionId)
+        {
+            return;
+        }
+
+        _sessionStore.Delete(sessionId);
+
+        if (sessionId == _session.SessionId)
+        {
+            var next = _sessionStore.List().FirstOrDefault();
+
+            if (next is not null)
+            {
+                // 当前会话已删除：先把 _session 指到空会话，
+                // 避免 OpenSessionCore 内部的 Persist 把已删会话重新写回磁盘
+                _session = _sessionStore.StartNewSession();
+                OpenSessionCore(next.SessionId);
+            }
+            else
+            {
+                NewSession();
+                return;
+            }
+        }
+
+        History.Refresh(_session.SessionId);
     }
 
     /// <summary>把界面消息同步到会话对象并写盘（任何失败都不影响聊天）。</summary>
@@ -97,6 +191,9 @@ public partial class ChatViewModel : ObservableObject
             // 会话保存是旁路能力：磁盘满/权限不足时只记日志，不打断对话
             _logger.LogError(ex, "[session] 会话保存失败（文件：{File}）", _session.FileName);
         }
+
+        // 标题（首条用户消息）等变化同步到抽屉列表
+        History.Refresh(_session.SessionId);
     }
 
     /// <summary>把当前消息列表重建为会话内容（跳过"正在输入"占位与空文本）。</summary>
@@ -121,8 +218,8 @@ public partial class ChatViewModel : ObservableObject
             });
         }
 
-        // 标题取第一条用户消息（截 24 字，换行压成空格）
-        if (_session.Messages.FirstOrDefault(static m => m.Role == "user") is { } first)
+        // 标题取第一条用户消息（截 24 字，换行压成空格）；用户手动重命名过则不再覆盖
+        if (!_session.TitleLocked && _session.Messages.FirstOrDefault(static m => m.Role == "user") is { } first)
         {
             var title = first.Text.ReplaceLineEndings(" ").Trim();
             _session.Title = title.Length <= 24 ? title : title[..24];

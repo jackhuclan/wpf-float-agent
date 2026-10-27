@@ -18,11 +18,19 @@ public partial class ChatWindow : Window
     /// <summary>距底部这个距离内视为"跟随底部"。</summary>
     private const double FollowThreshold = 96.0;
 
+    /// <summary>抽屉滑入/收起动画时长（FR-3.3：220ms CubicEase InOut）。</summary>
+    private static readonly TimeSpan DrawerDuration = TimeSpan.FromMilliseconds(220);
+
+    private bool _drawerOpen;
+
     public ChatWindow(ChatViewModel viewModel, IConfirmationService confirmation)
     {
         InitializeComponent();
         DataContext = viewModel;
         MessagesList.ItemsSource = viewModel.Messages;
+
+        // 抽屉里打开/新建会话后收起抽屉（FR-3.6 语义：切换即收，避免浮层残留）
+        viewModel.History.DrawerCloseRequested += CloseDrawer;
 
         // 写操作确认请求到达时，聊天窗若被隐藏（收起到悬浮球）则自动弹出并置前，
         // 保证确认卡一定被用户看到
@@ -115,6 +123,78 @@ public partial class ChatWindow : Window
     }
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Hide();
+
+    /// <summary>标题栏 ☰：展开/收起会话抽屉（FR-3.2）。</summary>
+    private void OnHistoryClick(object sender, RoutedEventArgs e)
+    {
+        if (_drawerOpen)
+        {
+            CloseDrawer();
+        }
+        else
+        {
+            OpenDrawer();
+        }
+    }
+
+    /// <summary>点击遮罩空白处关闭抽屉（FR-3.4）。</summary>
+    private void OnDrawerMaskClick(object sender, MouseButtonEventArgs e) => CloseDrawer();
+
+    private void OpenDrawer()
+    {
+        if (DataContext is not ChatViewModel vm)
+        {
+            return;
+        }
+
+        // 打开时刷新列表（外部新建/删除等变化一并可见）
+        vm.History.Refresh(vm.SessionId);
+
+        var width = MessagesHost.ActualWidth / 2;
+
+        DrawerPanel.RenderTransform = new System.Windows.Media.TranslateTransform();
+        DrawerOverlay.Visibility = Visibility.Visible;
+        DrawerMask.Opacity = 0;
+
+        var slide = new System.Windows.Media.Animation.DoubleAnimation(-width, 0, DrawerDuration)
+        {
+            EasingFunction = new System.Windows.Media.Animation.CubicEase
+            {
+                EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut,
+            },
+        };
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, DrawerDuration);
+
+        DrawerPanel.RenderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, slide);
+        DrawerMask.BeginAnimation(OpacityProperty, fade);
+        _drawerOpen = true;
+    }
+
+    private void CloseDrawer()
+    {
+        if (!_drawerOpen || !IsLoaded)
+        {
+            _drawerOpen = false;
+            return;
+        }
+
+        var width = Math.Max(MessagesHost.ActualWidth / 2, 1);
+
+        var slide = new System.Windows.Media.Animation.DoubleAnimation(0, -width, DrawerDuration)
+        {
+            EasingFunction = new System.Windows.Media.Animation.CubicEase
+            {
+                EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut,
+            },
+            FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop,
+        };
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(1, 0, DrawerDuration);
+        slide.Completed += (_, _) => DrawerOverlay.Visibility = Visibility.Collapsed;
+
+        DrawerPanel.RenderTransform?.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, slide);
+        DrawerMask.BeginAnimation(OpacityProperty, fade);
+        _drawerOpen = false;
+    }
 
     /// <summary>打开模型配置对话框（模态），保存后立即生效。</summary>
     private void OnConfigClick(object sender, RoutedEventArgs e)

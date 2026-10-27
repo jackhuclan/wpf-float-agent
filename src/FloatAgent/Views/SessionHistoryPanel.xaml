@@ -1,0 +1,335 @@
+<UserControl x:Class="Floaticon.Views.SessionHistoryPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- 抽屉内主按钮：新建对话（靛蓝底白字） -->
+        <Style x:Key="DrawerPrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" CornerRadius="8" Background="#6366F1" Padding="14,7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#4F52D9" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#4338CA" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 抽屉内幽灵按钮：« 收起 -->
+        <Style x:Key="DrawerGhostButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" CornerRadius="8" Background="Transparent" Padding="10,7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F3F4F6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 列表项操作按钮（… / 确认 / 取消） -->
+        <Style x:Key="DrawerItemButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" CornerRadius="6" Background="Transparent" Padding="7,4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#E5E7EB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 弹出菜单项（重命名 / 删除对话，整行可点、圆角高亮） -->
+        <Style x:Key="DrawerMenuItemStyle" TargetType="Button">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" CornerRadius="7" Background="Transparent" Padding="12,8">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F3F4F6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#FFFFFF">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 顶部操作行：新建对话 + « 收起（FR-3.5） -->
+        <Grid Grid.Row="0" Margin="12,12,12,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0"
+                    Style="{StaticResource DrawerPrimaryButtonStyle}"
+                    HorizontalAlignment="Stretch"
+                    Command="{Binding NewSessionCommand}"
+                    ToolTip="新建对话（当前会话已自动保存）">
+                <TextBlock Text="＋ 新建对话" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" />
+            </Button>
+            <Button Grid.Column="1"
+                    Style="{StaticResource DrawerGhostButtonStyle}"
+                    Margin="8,0,0,0"
+                    Command="{Binding CloseDrawerCommand}"
+                    ToolTip="收起会话列表">
+                <TextBlock Text="« 收起" />
+            </Button>
+        </Grid>
+
+        <!-- 会话列表（FR-4.2 副标题 / FR-4.3 …菜单 / FR-4.5 二次确认 / FR-4.6 行内重命名） -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      Margin="0,0,2,8">
+            <StackPanel>
+                <TextBlock Text="历史对话"
+                           FontSize="11.5"
+                           Foreground="#9CA3AF"
+                           Margin="14,4,0,4" />
+
+                <!-- 空状态 -->
+                <TextBlock Text="暂无历史会话"
+                           FontSize="12"
+                           Foreground="#9CA3AF"
+                           HorizontalAlignment="Center"
+                           Margin="0,24,0,24">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Sessions.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <ItemsControl ItemsSource="{Binding Sessions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <!-- 列表项：整块 Border 兜底命中测试（透明背景），右键菜单同「…」入口（FR-4.8） -->
+                            <Border x:Name="ItemRoot"
+                                    Margin="8,2"
+                                    Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="Transparent">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                <Setter Property="Background" Value="#EEEDFE" />
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsCurrent}" Value="False" />
+                                                    <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#F3F4F6" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+
+                                <Border.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="重命名"
+                                                  Command="{Binding Owner.StartRenameCommand}"
+                                                  CommandParameter="{Binding}" />
+                                        <MenuItem Header="删除对话"
+                                                  Command="{Binding Owner.RequestDeleteCommand}"
+                                                  CommandParameter="{Binding}" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 常规视图：标题（单行省略，悬浮完整时间）+ 日期副标题 -->
+                                    <StackPanel x:Name="NormalView" Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding FullTime}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#1F2937" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                            <Setter Property="Foreground" Value="#3C3489" />
+                                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock FontSize="11" Margin="0,2,0,0">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0} · {1} 条消息">
+                                                    <Binding Path="DateText" />
+                                                    <Binding Path="MessageCount" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!-- 行内重命名（FR-4.6）：替换标题区，Enter 确认 / Esc 放弃（见代码后置） -->
+                                    <TextBox x:Name="RenameBox"
+                                             Grid.Column="0"
+                                             VerticalAlignment="Center"
+                                             Text="{Binding RenameText, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="13"
+                                             Padding="6,4"
+                                             BorderBrush="#6366F1"
+                                             BorderThickness="1"
+                                             Visibility="Collapsed"
+                                             KeyDown="OnRenameKeyDown"
+                                             LostFocus="OnRenameLostFocus"
+                                             IsVisibleChanged="OnRenameBoxVisibleChanged" />
+
+                                    <!-- 右侧操作区 -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
+                                        <!-- 删除二次确认（FR-4.5）：…点击删除后原位出现 确认/取消 -->
+                                        <StackPanel x:Name="ConfirmDeleteView" Orientation="Horizontal" Visibility="Collapsed">
+                                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                                    Command="{Binding DataContext.ConfirmDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="确认" Foreground="#A32D2D" FontWeight="SemiBold" />
+                                            </Button>
+                                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                                    Margin="2,0,0,0"
+                                                    Command="{Binding DataContext.CancelDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="取消" />
+                                            </Button>
+                                        </StackPanel>
+
+                                        <!-- 「…」更多操作（FR-4.3）：点击不切换会话，仅弹出菜单 -->
+                                        <ToggleButton x:Name="MoreToggle"
+                                                      Cursor="Hand"
+                                                      Focusable="False"
+                                                      ClickMode="Press">
+                                            <ToggleButton.Template>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border x:Name="Bg" CornerRadius="6" Background="Transparent" Padding="7,4">
+                                                        <TextBlock Text="⋯" FontSize="14" Foreground="#6B7280" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bg" Property="Background" Value="#E5E7EB" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsChecked" Value="True">
+                                                            <Setter TargetName="Bg" Property="Background" Value="#E5E7EB" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </ToggleButton.Template>
+                                            <ToggleButton.ToolTip>
+                                                <ToolTip Content="重命名 / 删除" />
+                                            </ToggleButton.ToolTip>
+                                        </ToggleButton>
+
+                                        <!-- … 下拉菜单（FR-4.4：两项带图标；点击遮罩自动关闭 StaysOpen=False） -->
+                                        <Popup IsOpen="{Binding IsChecked, ElementName=MoreToggle}"
+                                               PlacementTarget="{Binding ElementName=MoreToggle}"
+                                               Placement="Bottom"
+                                               StaysOpen="False"
+                                               AllowsTransparency="True">
+                                            <Border Background="#FFFFFF"
+                                                    BorderBrush="#E5E7EB"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10"
+                                                    Padding="5"
+                                                    Margin="8"
+                                                    MinWidth="130">
+                                                <StackPanel>
+                                                    <Button Style="{StaticResource DrawerMenuItemStyle}"
+                                                            Command="{Binding DataContext.StartRenameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="✎" FontSize="12.5" Margin="0,0,8,0" />
+                                                            <TextBlock Text="重命名" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Style="{StaticResource DrawerMenuItemStyle}"
+                                                            Command="{Binding DataContext.RequestDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="🗑" FontSize="12.5" Margin="0,0,8,0" />
+                                                            <TextBlock Text="删除对话" Foreground="#A32D2D" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                        </Popup>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <DataTemplate.Triggers>
+                                <!-- 进入重命名：隐藏常规视图与操作区，显示文本框 -->
+                                <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                    <Setter TargetName="NormalView" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="RenameBox" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                    <Setter TargetName="MoreToggle" Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <!-- 进入删除确认：隐藏…按钮，显示 确认/取消 -->
+                                <DataTrigger Binding="{Binding IsConfirmingDelete}" Value="True">
+                                    <Setter TargetName="MoreToggle" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="ConfirmDeleteView" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

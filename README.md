@@ -35,7 +35,8 @@
 | 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task` / `run_container_code`） |
 | 滚动体验 | 6px 细滚动条、像素滚动、滚轮 170ms ease-out 缓动、流式期间智能跟随底部 |
 | 工具进度反馈 | 长耗时工具执行期间实时上报进度（如 `⚡ run_long_task 执行中… 60 / 120 秒`），显示在“正在输入”气泡下方，不再干等 |
-| 会话自动保存 | 每次新对话自动以会话 guid 命名，整会话写入运行目录 `sessions/<guid>.json`（原子覆盖写，含消息角色 / 正文 / 时间 / token 用量 / 模型名）；聊天窗标题栏「＋」一键开新会话（新 guid 新文件） |
+| 会话自动保存 | 每次新对话自动以会话 guid 命名，整会话写入运行目录 `sessions/<guid>.json`（原子覆盖写，含消息角色 / 正文 / 时间 / token 用量 / 模型名） |
+| 会话管理抽屉 | 标题栏左侧「☰」滑出覆盖式会话抽屉（220ms 动画 + 半透明遮罩，点遮罩收起）：新建对话 / 切换历史会话（消息完整回填）/ 行内重命名（Enter 确认、Esc 放弃）/ 删除（原位二次确认，删当前会话自动切最新一条）；列表项为「标题 + N 条消息 · 相对时间」（今天/昨天/M月d日/跨年，悬浮显示完整时间），当前会话高亮；重命名后不再被首条消息自动标题覆盖 |
 | 内置文件工具 | `read_file`：带行号分页读取白名单内文本文件（默认 2000 行可续读，单行截断，二进制/超大拒绝）；`write_file`：写前在聊天窗弹确认卡（路径 + 内容预览 + 同意/拒绝），同意后整文件覆盖写入（自动建父目录，UTF-8 无 BOM）。访问范围 = 运行目录 + `config.json` 的 `WorkspaceRoots`（改配置即生效），`config.json` 自身（含 API Key）读写都拒，防 `..` 穿越 |
 | 多屏适配 | PerMonitorV2 DPI 感知，弹窗位置夹取到当前工作区内 |
 
@@ -298,6 +299,7 @@ dotnet run --project src/RecipeDemo
 | --- | --- | --- |
 | 1.8.0 | 2026-10-27 | 新增内置文件工具：`read_file`（带行号分页读，单行截断，二进制/超 10MB 拒绝）与 `write_file`（写前聊天窗确认卡人工放行，同意后覆盖写 + 自动建父目录，UTF-8 无 BOM）；`WorkspaceScope` 白名单（运行目录 + `config.json` 可选 `WorkspaceRoots`，动态生效），`config.json` 读写都拒防 API Key 泄露；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子双验证 |
 | 1.8.1 | 2026-10-27 | 重构：写操作确认卡从 ChatWindow 拆为独立控件 `WriteConfirmationCard`（UserControl）+ 专属 `ConfirmationCardViewModel`（同意/拒绝命令与确认状态内聚到卡片 VM，ChatViewModel 只负责把请求入列）；对外行为与 UI 不变 |
+| 1.9.0 | 2026-10-27 | 新增会话管理抽屉（需求提取自 MegaAgent PRD FR-3/FR-4/B15）：标题栏左侧「☰」（替代原装饰圆点）滑出覆盖式抽屉——新建对话 / 打开历史会话（`ISessionStore` 新增 `List/Load/Delete/Rename`，切换时消息按角色与时间完整回填）/ 行内重命名（默认全选、Enter 确认、Esc 放弃、失焦确认，重命名后自动标题不再覆盖）/ 删除原位二次确认（删当前会话自动切到最新一条，列表空则新建）；列表项「标题 + N 条消息 · 相对时间」副标题，当前会话高亮；标题栏「＋」移除、新建对话入抽屉；损坏会话文件降级跳过不阻塞列表 |
 | 1.7.2 | 2026-10-27 | 会话保存失败改用标准日志：ChatViewModel 注入 `ILogger<ChatViewModel>`（Microsoft.Extensions.Logging），Persist 失败由 Debug.WriteLine 升级为 `LogError`（含会话文件名与完整异常），宿主 Host builder 默认日志管道（Debug/Console/EventSource）自动接住 |
 | 1.7.1 | 2026-10-27 | 美化聊天窗标题栏按钮 hover 效果：＋/⚙ 悬停改为半透明白叠加（按下加深），关闭按钮悬停改 Windows 惯例红色高亮并转白字；配置窗关闭按钮同步修复，不再出现与靛蓝标题栏撞色的系统默认灰色高亮 |
 | 1.7.0 | 2026-10-27 | 拉平技能依据实际运行反馈优化：核心原则新增"事实只认两个来源 / 被质疑先定事实不迎合 / 返回值如实引用"三条与对应反例（杜绝编造已完成、迎合式改口、凭印象转述）；新增工具执行日志：所有工具调用自动记录（时间/名称/参数/结果/耗时），内置 `query_tool_history` 工具供模型查证调用历史；新建会话时日志清空 |
