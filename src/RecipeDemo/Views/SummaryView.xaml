@@ -1,0 +1,73 @@
+<UserControl x:Class="RecipeDemo.Views.SummaryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#E5E7EB" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+        </Style>
+        <Style x:Key="CardLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="#8A94A6" />
+        </Style>
+        <Style x:Key="CardValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#2B2F36" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20,16">
+            <!-- 需求点 4：点击左侧配方树后显示当前选择的配方 -->
+            <Border Background="#EEF2FF"
+                    BorderBrush="#C7D2FE"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="16,12"
+                    HorizontalAlignment="Left">
+                <TextBlock Text="{Binding Message}"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#3730A3" />
+            </Border>
+
+            <UniformGrid Columns="4" Margin="0,16,0,0" HorizontalAlignment="Left">
+                <Border Style="{StaticResource CardBorder}" Width="150">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabel}" Text="配方名" />
+                        <TextBlock Style="{StaticResource CardValue}" Text="{Binding RecipeName}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardBorder}" Width="150">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabel}" Text="Wafer 数量" />
+                        <TextBlock Style="{StaticResource CardValue}" Text="{Binding WaferCount}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardBorder}" Width="150">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabel}" Text="上次运行" />
+                        <TextBlock Style="{StaticResource CardValue}" Text="{Binding LastRunTime}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardBorder}" Width="150">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabel}" Text="状态" />
+                        <TextBlock Style="{StaticResource CardValue}" Text="{Binding Status}" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <TextBlock Margin="0,8,0,0"
+                       FontSize="12"
+                       Foreground="#9CA3AF"
+                       Text="点击左侧配方树中的任意配方，此处会同步更新。" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

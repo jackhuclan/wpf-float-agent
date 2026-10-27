@@ -1,0 +1,361 @@
+<Window x:Class="RecipeDemo.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:RecipeDemo.ViewModels"
+        xmlns:views="clr-namespace:RecipeDemo.Views"
+        Title="RecipeWindow"
+        Width="1050" Height="600"
+        MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F6F8"
+        FontFamily="Microsoft YaHei UI">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- VM → View 隐式模板：ContentControl 按 ViewModel 运行时类型选视图 -->
+        <DataTemplate DataType="{x:Type vm:SummaryViewModel}">
+            <views:SummaryView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:WaferMapViewModel}">
+            <views:WaferMapView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AlignmentViewModel}">
+            <views:AlignmentView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:TestsViewModel}">
+            <views:TestsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RecipeRunParametersViewModel}">
+            <views:RecipeRunParametersView />
+        </DataTemplate>
+
+        <!-- 图标 -->
+        <Geometry x:Key="FolderIcon">
+            M1.5,3.5 H6 L7.5,5 H14.5 A1,1 0 0 1 15.5,6 V13 A1,1 0 0 1 14.5,14 H1.5 A1,1 0 0 1 0.5,13 V4.5 A1,1 0 0 1 1.5,3.5 Z
+        </Geometry>
+        <Geometry x:Key="RecipeIcon">
+            M3.5,1.5 H9 L12.5,5 V14.5 H3.5 Z M9,1.5 V5 H12.5
+        </Geometry>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧配方树面板 -->
+        <Border Grid.Column="0"
+                Width="{Binding PanelWidth}"
+                Background="White"
+                BorderBrush="#E3E5EA"
+                BorderThickness="0,0,1,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsPanelOpen}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel>
+                <!-- 搜索框 -->
+                <Border DockPanel.Dock="Top"
+                        Margin="8,8,8,4"
+                        Background="White"
+                        BorderBrush="#D9DCE3"
+                        BorderThickness="1"
+                        CornerRadius="2"
+                        Padding="6,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     VerticalContentAlignment="Center"
+                                     FontSize="12"
+                                     Foreground="#3A3F4A"
+                                     VerticalScrollBarVisibility="Hidden" />
+                            <TextBlock Text="Please enter the keyword to search"
+                                       FontSize="12"
+                                       Foreground="#A8AEB8"
+                                       VerticalAlignment="Center"
+                                       Margin="1,0,0,0"
+                                       IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SearchText}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <!-- 放大镜 -->
+                        <Canvas Grid.Column="1" Width="14" Height="14" VerticalAlignment="Center" Margin="4,0,0,0">
+                            <Ellipse Canvas.Left="1" Canvas.Top="1" Width="8.5" Height="8.5"
+                                     Stroke="#9AA0A8" StrokeThickness="1.3" />
+                            <Line X1="8.6" Y1="8.6" X2="13" Y2="13" Stroke="#9AA0A8" StrokeThickness="1.3" />
+                        </Canvas>
+                    </Grid>
+                </Border>
+
+                <!-- 配方树 -->
+                <TreeView x:Name="RecipeTree"
+                          ItemsSource="{Binding RootNodes}"
+                          SelectedItemChanged="OnTreeSelectedItemChanged"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Padding="2,2,2,8"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                            <Setter Property="Focusable" Value="True" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="TreeViewItem">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="16" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <ToggleButton x:Name="Expander"
+                                                              Focusable="False"
+                                                              ClickMode="Press"
+                                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                                    <ToggleButton.Template>
+                                                        <ControlTemplate TargetType="ToggleButton">
+                                                            <Border Width="16" Height="16" Background="Transparent">
+                                                                <Path x:Name="Arrow"
+                                                                      Data="M1,1 L6,6 L1,11"
+                                                                      Stroke="#9AA0A8"
+                                                                      StrokeThickness="1.5"
+                                                                      HorizontalAlignment="Center"
+                                                                      VerticalAlignment="Center">
+                                                                    <Path.LayoutTransform>
+                                                                        <RotateTransform Angle="0" />
+                                                                    </Path.LayoutTransform>
+                                                                </Path>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsChecked" Value="True">
+                                                                    <Setter TargetName="Arrow" Property="LayoutTransform">
+                                                                        <Setter.Value>
+                                                                            <RotateTransform Angle="90" />
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </ToggleButton.Template>
+                                                </ToggleButton>
+                                                <ContentPresenter Grid.Column="1" x:Name="PART_Header" ContentSource="Header" />
+                                            </Grid>
+                                            <ItemsPresenter x:Name="ItemsHost" Margin="16,0,0,0" />
+                                        </StackPanel>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="HasItems" Value="False">
+                                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                                            </Trigger>
+                                            <Trigger Property="IsExpanded" Value="False">
+                                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                            <Border x:Name="NodeBg"
+                                    Background="Transparent"
+                                    CornerRadius="2"
+                                    Padding="4,3"
+                                    Margin="0,1,4,1">
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- 文件夹 / 配方图标（默认值写进 Style，触发器才能覆盖） -->
+                                    <Path Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center">
+                                        <Path.Style>
+                                            <Style TargetType="Path">
+                                                <Setter Property="Data" Value="{StaticResource FolderIcon}" />
+                                                <Setter Property="Fill" Value="#F6C445" />
+                                                <Setter Property="Stroke" Value="#E0A800" />
+                                                <Setter Property="StrokeThickness" Value="0.8" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsFolder}" Value="False">
+                                                        <Setter Property="Data" Value="{StaticResource RecipeIcon}" />
+                                                        <Setter Property="Fill" Value="#EAF1FF" />
+                                                        <Setter Property="Stroke" Value="#5B8DEF" />
+                                                        <Setter Property="StrokeThickness" Value="1.2" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="12.5"
+                                               Foreground="#3A3F4A"
+                                               VerticalAlignment="Center"
+                                               Margin="6,0,0,0" />
+                                    <!-- Recipes 根节点旁的 Collapse 按钮 -->
+                                    <Button Content="Collapse"
+                                            FontSize="10.5"
+                                            Foreground="#5B8DEF"
+                                            Background="White"
+                                            BorderBrush="#C9D7F5"
+                                            BorderThickness="1"
+                                            Cursor="Hand"
+                                            Margin="10,0,0,0"
+                                            Padding="7,1"
+                                            Command="{Binding DataContext.CollapseAllCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Visibility="{Binding IsRoot, Converter={StaticResource BoolToVis}}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bd"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="2"
+                                                        Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="#F0F5FF" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                            <HierarchicalDataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                    <Setter TargetName="NodeBg" Property="Background" Value="#DCE9FD" />
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </DockPanel>
+        </Border>
+
+        <!-- 收起 / 展开左侧面板的小蓝条 -->
+        <Button Grid.Column="1"
+                Command="{Binding TogglePanelCommand}"
+                Cursor="Hand"
+                Focusable="False"
+                Width="14"
+                VerticalAlignment="Center"
+                Margin="0,0,2,0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bg" Background="#2569E8" CornerRadius="3" Width="14" Height="44">
+                        <TextBlock x:Name="Chevron"
+                                   Text="‹"
+                                   FontSize="12"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="#1D5BD6" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding IsPanelOpen}" Value="False">
+                            <Setter TargetName="Chevron" Property="Text" Value="›" />
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+
+        <!-- 右侧：标题 + 标签条 + 内容 -->
+        <Border Grid.Column="2" Background="#EFEFF1" BorderBrush="#DDDFE4" BorderThickness="1,1,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- 标题（左） + 标签条（右） -->
+                <Border Grid.Row="0" Background="#EFEFF1" Padding="12,6,12,0">
+                    <DockPanel>
+                        <ListBox DockPanel.Dock="Right"
+                                 ItemsSource="{Binding Tabs}"
+                                 SelectedItem="{Binding SelectedTab}"
+                                 Background="Transparent"
+                                 BorderThickness="0">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Focusable" Value="True" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="TabBg"
+                                                        Margin="3,4,3,0"
+                                                        Padding="14,6"
+                                                        CornerRadius="3,3,0,0"
+                                                        Background="#E4E6EA"
+                                                        BorderBrush="#D5D8DE"
+                                                        BorderThickness="1,1,1,0">
+                                                    <TextBlock Text="{Binding Header}"
+                                                               FontSize="12.5"
+                                                               Foreground="#3A3F4A" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="TabBg" Property="Background" Value="White" />
+                                                        <Setter TargetName="TabBg" Property="BorderBrush" Value="#C9CDD4" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="TabBg" Property="Background" Value="#EDEEF2" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
+
+                        <TextBlock Text="{Binding SelectedRecipeName}"
+                                   FontSize="13.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2B2F36"
+                                   VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+
+                <!-- 当前视图 -->
+                <Border Grid.Row="1" Background="#FBFBFC" BorderBrush="#DDDFE4" BorderThickness="0,1,0,0">
+                    <ContentControl Content="{Binding SelectedTab}" Margin="0" />
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

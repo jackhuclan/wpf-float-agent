@@ -3,6 +3,7 @@
     <Project Path="src/FloatAgent.Abstractions/FloatAgent.Abstractions.csproj" />
     <Project Path="src/FloatAgent/FloatAgent.csproj" />
     <Project Path="src/Floaticon/Floaticon.csproj" />
+    <Project Path="src/RecipeDemo/RecipeDemo.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="AGENTS.md" />

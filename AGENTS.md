@@ -14,7 +14,8 @@ Floaticon：Windows 桌面右下角悬浮 AI 助手（.NET 10 WPF）。悬浮球
 ```
 src/Floaticon/            启动壳（WinExe）：App.xaml.cs 只做 Host 构建 + DI 装配，禁止写业务逻辑
 src/FloatAgent/           业务类库：Models / Services / Tools / ViewModels / Views / skills
-src/FloatAgent.Abstractions/ 接口类库（net10.0）：IAIToolService
+src/FloatAgent.Abstractions/ 接口类库（net10.0）：IAIToolService、ToolProgressService
+src/RecipeDemo/           演示外壳（WinExe）：配方树 + 五视图，引用 FloatAgent 显示悬浮球
 Directory.Packages.props   NuGet 包版本集中管理（csproj 里只写 Include 不写 Version）
 docs/                      PRD（md 为准，docx 为存档）
 ```

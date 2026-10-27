@@ -95,7 +95,8 @@ wpf-float-agent/
 │  ├─ Views/                     # FloatingBallWindow、ChatWindow、ConfigWindow
 │  │  └─ Behaviors/              # SmoothScrollBehavior（滚轮缓动）
 │  └─ skills/                    # grill-me、skill-creator、get-weather
-├─ src/FloatAgent.Abstractions/      # IAIToolService
+├─ src/FloatAgent.Abstractions/      # IAIToolService、ToolProgressService
+├─ src/RecipeDemo/                   # RecipeDemo 演示外壳（配方树 + 五视图 + 悬浮球）
 ├─ docs/                         # PRD（md + docx）
 ├─ output/                       # PRD 生成链路中间产物
 ├─ Directory.Build.props         # 全解决方案共享元数据（版本/作者/项目地址/描述）
@@ -256,6 +257,19 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 | `thirdparty_long_run_task` | 工具 | 模拟第三方长任务（约 15 秒，内部无法上报进度）：由 `PeriodicProgressService` 在等待侧周期上报进度，返回执行结果；验证第三方方法的进度包装链路 |
 | `run_container_code` | 工具 | 基于 `Microsoft.Agents.AI.Tools.Shell` 的 `DockerShellExecutor`，在一次性 Linux 容器中执行 C# / Python / JavaScript 代码（宿主机无需运行时）：脚本支持路径或内联代码、base64 写入后执行、网络隔离 + 1 GiB 内存上限 + 180 秒超时、每 5 秒上报进度；C# 在容器内生成离线可 restore 的迷你工程编译执行（不访问网络）；首次运行需拉取镜像 |
 
+## RecipeDemo 演示外壳
+
+`src/RecipeDemo` 是一个独立运行的演示工程（窗口标题 RecipeWindow），用于预演产线配方管理界面：
+
+- **左侧配方树**：顶部搜索框按名称过滤；"Recipes" 根节点旁的 Collapse 折叠全部；右缘小蓝条收起/展开面板。
+- **右侧五个视图**（各自独立 UserControl + ViewModel）：Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters，顶部标签条切换。
+- 点击配方树中的配方，**Summary 显示「当前选择的配方是：***」**；Wafer Map 初始只有「Create Wafer Map」按钮，点击后生成晶圆映射；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save。
+- 主窗打开时同时显示 FloatAgent 的悬浮球，点击悬浮球弹出聊天窗；技能放在 `src/RecipeDemo/skills/`，构建时复制到 exe 旁。
+
+```bash
+dotnet run --project src/RecipeDemo
+```
+
 ## 技术栈
 
 | 组件 | 版本 | 用途 |
@@ -278,6 +292,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.4.0 | 2026-10-27 | 新增 RecipeDemo 演示外壳：配方树（搜索/折叠/收起）+ Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters 五视图；点击配方 Summary 显示当前配方；Wafer Map 仅 Create Wafer Map 按钮；Alignment 为 Edge/Coarse/Fine 箭头子标签 + 右下角 Save；主窗打开时显示 FloatAgent 悬浮球；含 skills 目录 |
 | 1.3.2 | 2026-10-26 | publish-nuget 增加版本门禁：改代码不升版本号的推送直接失败，保证每次代码更新都发布带新版本号的 NuGet 包 |
 | 1.3.1 | 2026-10-26 | 修复用户气泡悬浮操作行：悬浮判定扩到整条消息行，指针从气泡移向复制按钮（含中间 4px 间隙）时按钮不再消失，可正常点击复制；复制按钮可点区域 26×18 |
 | 1.3.0 | 2026-10-24 | 版本元数据集中到 `Directory.Build.props`；新增 `run_container_code` 容器代码执行工具、`PeriodicProgressService` 工厂方法 |

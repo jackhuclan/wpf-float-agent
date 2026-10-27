@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>RecipeDemo</RootNamespace>
+    <AssemblyName>RecipeDemo</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <!-- 与 Floaticon 相同的技术栈与 NuGet 包（版本由根目录 Directory.Packages.props 集中管理） -->
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <!-- 复用 FloatAgent 的悬浮球 / 聊天窗 / 技能与 Agent 底座 -->
+  <ItemGroup>
+    <ProjectReference Include="..\FloatAgent\FloatAgent.csproj" />
+    <ProjectReference Include="..\FloatAgent.Abstractions\FloatAgent.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- skills 目录随程序输出（技能文件按"运行目录"约定放在 exe 旁） -->
+  <ItemGroup>
+    <Content Include="skills\**\*" Link="skills\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
