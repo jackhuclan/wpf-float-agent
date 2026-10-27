@@ -74,6 +74,9 @@ public partial class App : Application
         // 聊天（AgentChatService 每次请求按当前配置重建 Agent，配置保存即生效）
         services.AddSingleton<IChatService, AgentChatService>();
 
+        // 会话持久化：每个会话一个 sessions/<guid>.json
+        services.AddSingleton<ISessionStore, JsonSessionStore>();
+
         // MVVM：ChatViewModel 为单例以保留历史消息；ConfigViewModel 每次打开配置窗新建
         services.AddSingleton<ChatViewModel>();
         services.AddTransient<ConfigViewModel>();

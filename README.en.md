@@ -35,6 +35,7 @@ Built on **.NET 10 WPF** and the **Microsoft Agent Framework (MAF)**, with zero 
 | Tool system | C# functions registered as AIFunctions through `IAIToolService`, invoked automatically by the Agent (`get_weather` / `run_long_task` / `run_container_code`) |
 | Scrolling experience | 6px slim scrollbar, pixel-based scrolling, 170ms ease-out wheel animation, smart follow-to-bottom during streaming |
 | Tool progress feedback | Long-running tools report progress in real time (e.g. `⚡ run_long_task running… 60 / 120 s`), shown under the "typing" bubble — no more silent waiting |
+| Session auto-save | Every new conversation is saved as `sessions/<guid>.json` next to the exe (atomic overwrite; role / text / time / token usage / model name per message, title from the first user message); the 「＋」 button in the chat title bar starts a new session under a fresh guid |
 | Multi-monitor support | PerMonitorV2 DPI awareness; popup positions are clamped to the current working area |
 
 ## Architecture
@@ -293,6 +294,7 @@ dotnet run --project src/RecipeDemo
 
 | Version | Date | Changes |
 | --- | --- | --- |
+| 1.6.0 | 2026-10-27 | Session auto-save: each new conversation writes `sessions/<guid>.json` keyed by the session guid (ISessionStore / JsonSessionStore, atomic overwrite, role / text / time / token usage / model name, title from the first user message); new 「＋」 button in the chat title bar starts a new session under a new guid; the file is written after the user message lands and after each completed round |
 | 1.5.0 | 2026-10-27 | RecipeDemo skills wired to AI tools: the alignment workflow skill (4 stages / 12 actions with human-confirmation gates) plus 11 tools (select_recipe / open_alignment / switch_to_edge_alignment / calculate_wafer_center / switch_to_coarse_alignment / create_recipe_template / run_coarse_align / switch_to_fine_alignment / run_fine_align / define_llc / save_recipe) registered by MainViewModel / AlignmentViewModel via IAIToolService; background-thread tool calls marshal UI updates through the Dispatcher |
 | 1.4.0 | 2026-10-27 | Added the RecipeDemo demo shell: recipe tree (search/collapse/hide) + Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters views; clicking a recipe updates Summary; Wafer Map reduced to a Create Wafer Map button; Alignment hosts Edge/Coarse/Fine arrow sub-tabs with Save; the FloatAgent floating ball shows alongside the main window; ships with a skills folder |
 | 1.3.2 | 2026-10-26 | publish-nuget adds a version gate: pushes that change code without bumping the version now fail, so every code update ships a new versioned NuGet package |

@@ -3,7 +3,7 @@
 | 项目   | 内容                                                            |
 | ---- | ------------------------------------------------------------- |
 | 产品名称 | Floaticon（桌面悬浮 AI 助手）                                         |
-| 文档版本 | V1.5（文件名沿用 v1.1，保持外部链接稳定）                                        |
+| 文档版本 | V1.6（文件名沿用 v1.1，保持外部链接稳定）                                        |
 | 文档状态 | 已发布（对应已实现版本）                                                  |
 | 编写日期 | 2026-10-22                                                    |
 | 更新日期 | 2026-10-27                                                    |
@@ -259,6 +259,23 @@ Floaticon 定位为 Windows 桌面右下角的常驻悬浮 AI 助手：一个可
 - [ ] 长回复场景滚轮滚动平滑无跳变，可随时反向滚动。
 - [ ] 生成过程中视图持续跟随最新内容；上翻后不再自动回底。
 
+### FR-11 会话自动保存（P1）
+
+**需求描述**
+
+1. 每次开始新对话（应用启动或用户点「新建会话」）即生成会话 guid，会话整体持久化为运行目录 `sessions/<guid>.json`，一个会话一个文件。
+2. 提供 `ISessionStore`（DI 单例）与 `JsonSessionStore` 实现：`StartNewSession()` 生成新 guid，`Save()` 整会话覆盖写（先写 `.tmp` 再原子替换，不留半截文件）；目录不存在时自动创建。
+3. 会话内容：sessionId、标题（取首条用户消息前 24 字，换行压成空格）、创建/更新时间，以及逐条消息的 role / text / timestamp / token 用量 / 模型名；"正在输入"占位等界面态不入盘。
+4. 落盘时机：用户消息发送后立即写一次（防中途崩溃丢提问），每轮问答结束（含停止 / 出错）再写一次；保存失败只记调试日志，不打断对话。
+5. 聊天窗标题栏新增「＋」新建会话按钮：清空消息、换新 guid 并立刻写出新的会话文件；生成期间禁用。
+6. 会话目录 `sessions/` 属本地数据，加入 `.gitignore` 不入库。
+
+**验收标准**
+
+- [ ] 启动应用后 `sessions/` 下出现以当前会话 guid 命名的 json。
+- [ ] 发送一条消息并收到回复后，文件含 assistant / user / assistant 三条且用量、模型名正确。
+- [ ] 点「＋」后产生新的 guid 与新文件，旧文件内容不变。
+
 ## 5. 非功能需求
 
 | 编号     | 类别   | 需求                                                                                                                                                                                                             |
@@ -335,3 +352,4 @@ FloatAgent.Abstractions（接口类库，net10.0）
 | V1.3 交互修复与发版同步 | FR-05 第 5 项：用户气泡悬浮操作行的悬浮判定扩到整条消息行，指针从气泡移向复制按钮途经间隙时操作行不再消失、按钮可正常点击（可点区域 26×18）；版本升至 1.3.1，README（中/英）与 PRD、NuGet 包随代码同批更新发布 |
 | V1.4 RecipeDemo 演示外壳（衍生需求） | 新增独立演示工程 `src/RecipeDemo`（产线配方管理界面预演）：左侧配方树（关键字过滤 / Collapse 折叠 / 右缘蓝条收起）+ 右侧五个独立 UserControl+ViewModel 视图 Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters；点击配方树后 Summary 显示「当前选择的配方是：***」；Wafer Map 初始仅「Create Wafer Map」按钮；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save；RecipeDemo 引用 FloatAgent / FloatAgent.Abstractions，主窗打开时同步显示悬浮球（可弹出聊天窗）；自带 skills 目录（构建时复制到 exe 旁）；版本升至 1.4.0 |
 | V1.5 RecipeDemo 技能与 AI 工具打通 | 内置 `skills/alignment/` 配方拉平标准作业流程技能（4 阶段 12 动作：打开配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具由 ViewModel 注入 `IAIToolService` 并 `AddTool` 注册：`select_recipe` / `open_alignment`（MainViewModel，配方树查找与标签页切换）与其余 9 个（AlignmentViewModel：switch_to_edge/coarse/fine_alignment、calculate_wafer_center、create_recipe_template、run_coarse_align、run_fine_align、define_llc、save_recipe）；工具在后台线程调用，经 `AppHelper.DispatcherInvoke` 同步投递 UI 线程改 ObservableProperty；失败分支（视图不对 / 模版未创建 / 未选配方）按真实规则拦截；已真机验证 11 工具全链路（含失败分支）；版本升至 1.5.0 |
+| V1.6 会话自动保存 | 新增 FR-11：每次新对话按会话 guid 持久化为运行目录 `sessions/<guid>.json`（ISessionStore / JsonSessionStore 单例，`.tmp` 原子替换覆盖写，目录自动创建）；内容含标题（首条用户消息前 24 字）与逐条 role / text / timestamp / token 用量 / 模型名；落盘时机为用户消息发送后与每轮问答结束（含停止 / 出错），失败只记日志不打断对话；聊天窗标题栏新增「＋」新建会话按钮（生成期间禁用，新 guid 新文件）；`sessions/` 加入 .gitignore；ChatSession.Messages 用 JsonObjectCreationHandling.Populate 保证反序列化可回填；已真机验证（启动即建文件 / 三消息完整 / 新会话换 guid 旧文件不变）；版本升至 1.6.0 |

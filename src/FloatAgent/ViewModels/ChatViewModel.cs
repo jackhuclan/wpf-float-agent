@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,11 +17,22 @@ namespace Floaticon.ViewModels;
 /// </summary>
 public partial class ChatViewModel : ObservableObject
 {
+    private const string Greeting =
+        "你好，我是你的 AI 助手，已接入 DeepSeek。已加载技能：grill-me（方案拷问）、skill-creator（技能创作）、get-weather（天气查询），需要时我会自动调用。";
+
     private readonly IChatService _chatService;
     private readonly ToolProgressService _progress;
+    private readonly ISessionStore _sessionStore;
+    private ChatSession _session;
     private CancellationTokenSource? _cts;
 
     public ObservableCollection<ChatMessage> Messages { get; } = [];
+
+    /// <summary>当前会话 guid（即会话 json 的文件名）。</summary>
+    public string SessionId => _session.SessionId;
+
+    /// <summary>当前会话文件完整路径（标题栏 tooltip 用）。</summary>
+    public string SessionFilePath => Path.Combine(_sessionStore.SessionsDirectory, _session.FileName);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
@@ -29,15 +41,81 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NewSessionCommand))]
     private bool _isBusy;
 
-    public ChatViewModel(IChatService chatService, ToolProgressService progress)
+    public ChatViewModel(IChatService chatService, ToolProgressService progress, ISessionStore sessionStore)
     {
         _chatService = chatService;
         _progress = progress;
-        Messages.Add(new ChatMessage(
-            "你好，我是你的 AI 助手，已接入 DeepSeek。已加载技能：grill-me（方案拷问）、skill-creator（技能创作）、get-weather（天气查询），需要时我会自动调用。",
-            isUser: false));
+        _sessionStore = sessionStore;
+
+        // 每次启动（或点"新建会话"）都开一次新会话：立即生成 guid 并按该 guid 落盘
+        _session = _sessionStore.StartNewSession();
+        Messages.Add(new ChatMessage(Greeting, isUser: false));
+        Persist();
+    }
+
+    /// <summary>开一次新对话：换新 guid、清空消息并立刻写出新的会话文件。</summary>
+    private bool CanNewSession() => !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanNewSession))]
+    private void NewSession()
+    {
+        _cts?.Cancel();
+
+        Messages.Clear();
+        _session = _sessionStore.StartNewSession();
+        Messages.Add(new ChatMessage(Greeting, isUser: false));
+
+        Persist();
+        OnPropertyChanged(nameof(SessionId));
+        OnPropertyChanged(nameof(SessionFilePath));
+    }
+
+    /// <summary>把界面消息同步到会话对象并写盘（任何失败都不影响聊天）。</summary>
+    private void Persist()
+    {
+        try
+        {
+            SyncSession();
+            _sessionStore.Save(_session);
+        }
+        catch (Exception ex)
+        {
+            // 会话保存是旁路能力：磁盘满/权限不足时只丢日志，不打断对话
+            Debug.WriteLine($"[session] 保存失败：{ex.Message}");
+        }
+    }
+
+    /// <summary>用当前消息列表重建会话内容（跳过"正在输入"占位与空文本）。</summary>
+    private void SyncSession()
+    {
+        _session.Messages.Clear();
+
+        foreach (var message in Messages)
+        {
+            if (message.IsTyping || string.IsNullOrWhiteSpace(message.Text))
+            {
+                continue;
+            }
+
+            _session.Messages.Add(new SessionMessage
+            {
+                Role = message.IsUser ? "user" : "assistant",
+                Text = message.Text,
+                Timestamp = message.Timestamp,
+                TotalTokens = message.Usage?.TotalTokens,
+                Model = message.ModelName,
+            });
+        }
+
+        // 标题取第一条用户消息（截 24 字，换行压成空格）
+        if (_session.Messages.FirstOrDefault(static m => m.Role == "user") is { } first)
+        {
+            var title = first.Text.ReplaceLineEndings(" ").Trim();
+            _session.Title = title.Length <= 24 ? title : title[..24];
+        }
     }
 
     private bool CanSend() => !IsBusy && !string.IsNullOrWhiteSpace(InputText);
@@ -49,6 +127,7 @@ public partial class ChatViewModel : ObservableObject
         InputText = string.Empty;
 
         Messages.Add(new ChatMessage(userText, isUser: true));
+        Persist();   // 用户消息先落盘，避免中途崩溃丢掉提问
 
         // 占位气泡：先显示"正在输入"，收到首块内容后切换为正文
         var reply = new ChatMessage(string.Empty, isUser: false, isTyping: true);
@@ -138,6 +217,9 @@ public partial class ChatViewModel : ObservableObject
             _progress.Progress -= OnProgress;
             reply.IsTyping = false;
             IsBusy = false;
+
+            // 一轮问答结束（含停止 / 出错）：整会话写回 <guid>.json
+            Persist();
         }
     }
 

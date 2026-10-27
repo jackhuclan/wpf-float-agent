@@ -35,6 +35,7 @@
 | 工具系统 | C# 函数经 `IAIToolService` 注册为 AIFunction，由 Agent 自动调用（`get_weather` / `run_long_task` / `run_container_code`） |
 | 滚动体验 | 6px 细滚动条、像素滚动、滚轮 170ms ease-out 缓动、流式期间智能跟随底部 |
 | 工具进度反馈 | 长耗时工具执行期间实时上报进度（如 `⚡ run_long_task 执行中… 60 / 120 秒`），显示在“正在输入”气泡下方，不再干等 |
+| 会话自动保存 | 每次新对话自动以会话 guid 命名，整会话写入运行目录 `sessions/<guid>.json`（原子覆盖写，含消息角色 / 正文 / 时间 / token 用量 / 模型名）；聊天窗标题栏「＋」一键开新会话（新 guid 新文件） |
 | 多屏适配 | PerMonitorV2 DPI 感知，弹窗位置夹取到当前工作区内 |
 
 ## 技术架构
@@ -293,6 +294,7 @@ dotnet run --project src/RecipeDemo
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.6.0 | 2026-10-27 | 会话自动保存：每次新对话按会话 guid 写 `sessions/<guid>.json`（ISessionStore / JsonSessionStore，原子覆盖写，含角色 / 正文 / 时间 / token 用量 / 模型名，标题取首条用户消息）；聊天窗标题栏新增「＋」新建会话按钮，换新 guid 开新文件；用户消息发送后与每轮问答结束即落盘 |
 | 1.5.0 | 2026-10-27 | RecipeDemo 打通技能与 AI 工具：内置 alignment 拉平作业流程技能（4 阶段 12 动作 + 人工确认卡点），新增 11 个工具（select_recipe / open_alignment / switch_to_edge_alignment / calculate_wafer_center / switch_to_coarse_alignment / create_recipe_template / run_coarse_align / switch_to_fine_alignment / run_fine_align / define_llc / save_recipe），由 MainViewModel / AlignmentViewModel 注入 IAIToolService 注册，后台线程调用经 Dispatcher 投递 UI 线程 |
 | 1.4.0 | 2026-10-27 | 新增 RecipeDemo 演示外壳：配方树（搜索/折叠/收起）+ Summary / Wafer Map / Alignment / Tests / Recipe-Run Parameters 五视图；点击配方 Summary 显示当前配方；Wafer Map 仅 Create Wafer Map 按钮；Alignment 为 Edge/Coarse/Fine 箭头子标签 + 右下角 Save；主窗打开时显示 FloatAgent 悬浮球；含 skills 目录 |
 | 1.3.2 | 2026-10-26 | publish-nuget 增加版本门禁：改代码不升版本号的推送直接失败，保证每次代码更新都发布带新版本号的 NuGet 包 |

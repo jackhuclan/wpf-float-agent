@@ -60,6 +60,9 @@ public partial class App : Application
 
         services.AddSingleton<IChatService, AgentChatService>();
 
+        // 会话持久化：每个会话一个 sessions/<guid>.json
+        services.AddSingleton<ISessionStore, JsonSessionStore>();
+
         // 聊天窗 Hide 复用，必须是单例；配置窗 Close 后不可复用，用瞬时
         services.AddSingleton<ChatViewModel>();
         services.AddSingleton<ChatWindow>();

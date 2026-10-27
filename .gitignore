@@ -51,5 +51,8 @@ dist
 # 本地模型配置（含 API Key，绝不入库）
 config.json
 
+# 会话记录（运行时按会话 guid 生成，属于本地数据）
+sessions/
+
 # 构建产物（build.ps1 / build.cmd 生成）
 release/

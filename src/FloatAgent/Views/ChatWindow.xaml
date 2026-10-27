@@ -388,6 +388,18 @@
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center">
+                            <!-- 新建会话（当前会话已按 guid 自动保存到 sessions/） -->
+                            <Button Content="＋"
+                                    Width="28" Height="28"
+                                    Margin="0,0,4,0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Foreground="#E0E7FF"
+                                    FontSize="14"
+                                    Cursor="Hand"
+                                    ToolTip="新建会话（当前会话已自动保存）"
+                                    Command="{Binding NewSessionCommand}" />
+
                             <!-- 配置按钮 -->
                             <Button Content="⚙"
                                     Width="28" Height="28"
