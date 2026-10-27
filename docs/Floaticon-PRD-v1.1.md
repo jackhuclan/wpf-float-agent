@@ -373,6 +373,7 @@ RecipeDemo 的 alignment 技能（4 阶段 12 动作、含人工确认卡点）�
 
 | 版本节点         | 需求内容                                                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| V1.8.1 确认卡控件化 | 重构：写操作确认卡从 ChatWindow 拆为独立控件 `WriteConfirmationCard`（UserControl，Views/）+ 专属 `ConfirmationCardViewModel`（ViewModels/）——请求引用、待决状态、结果文本与同意/拒绝命令内聚到卡片 VM，按钮直接绑定自身 DataContext（去掉 RelativeSource AncestorType=Window）；ChatMessage 的 6 个 Confirmation* 观察属性收敛为一个 `ConfirmationCard` 引用（IsConfirmation 变为派生属性）；ChatViewModel 只负责把请求入列（OnConfirmationRequested 构造卡片 VM）。对外 UI 与行为不变 |
 | V1.8 内置文件工具与写确认卡 | 新增 FR-13：`read_file`（行号分页 / 单行截断 / 二进制与超大拒绝）与 `write_file`（覆盖写 / 自动建目录 / UTF-8 无 BOM）两个内置工具，`WorkspaceScope` 白名单（运行目录 + config.json 可选 `WorkspaceRoots`，动态生效）+ `config.json` 拒绝名单（防 API Key 泄露）；`write_file` 写前经 `IConfirmationService` 人工确认——聊天窗插确认卡（路径 / 预览 / 同意·拒绝），隐藏时自动弹出，拒绝 / 超时 120s / 停止均不落盘；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子（截图 + 自动同意 approved=True）双验证；版本升至 1.8.0 |
 | V0.1 骨架      | 悬浮球 + 点击弹出聊天窗（.NET 10 WPF，无边框置顶可拖拽）                                                                               |
 | V0.2 框架      | 引入 CommunityToolkit.Mvvm 8.4.2、依赖注入 10.0.12                                                                       |

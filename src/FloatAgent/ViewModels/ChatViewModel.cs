@@ -240,7 +240,8 @@ public partial class ChatViewModel : ObservableObject
     private void Stop() => _cts?.Cancel();
 
     /// <summary>
-    /// 写操作确认：工具线程发来请求 → 调度到 UI 线程插入确认卡。
+    /// 写操作确认：工具线程发来请求 → 调度到 UI 线程插入确认卡
+    /// （卡片 UI 与交互在 WriteConfirmationCard / ConfirmationCardViewModel，本类只负责入列）。
     /// 卡片 Text 恒为空，SyncSession 会跳过，确认卡不入会话 json。
     /// </summary>
     private void OnConfirmationRequested(ConfirmationRequest request)
@@ -257,37 +258,8 @@ public partial class ChatViewModel : ObservableObject
         {
             Messages.Add(new ChatMessage(string.Empty, isUser: false)
             {
-                IsConfirmation = true,
-                ConfirmationRequest = request,
-                ConfirmationTitle = request.Title,
-                ConfirmationPath = request.Detail,
-                ConfirmationPreview = request.Preview,
-                ConfirmationPending = true,
+                ConfirmationCard = new ConfirmationCardViewModel(request),
             });
         });
-    }
-
-    /// <summary>确认卡「同意」：放行挂起的写操作。</summary>
-    [RelayCommand]
-    private void ApproveConfirmation(ChatMessage? message)
-    {
-        if (message is { ConfirmationPending: true, ConfirmationRequest: { } request })
-        {
-            message.ConfirmationPending = false;
-            message.ConfirmationOutcome = "✅ 已同意，工具继续执行";
-            request.Complete(approved: true);
-        }
-    }
-
-    /// <summary>确认卡「拒绝」：拦截挂起的写操作（工具将收到拒绝并如实告知模型）。</summary>
-    [RelayCommand]
-    private void DenyConfirmation(ChatMessage? message)
-    {
-        if (message is { ConfirmationPending: true, ConfirmationRequest: { } request })
-        {
-            message.ConfirmationPending = false;
-            message.ConfirmationOutcome = "❌ 已拒绝，未写入任何内容";
-            request.Complete(approved: false);
-        }
     }
 }

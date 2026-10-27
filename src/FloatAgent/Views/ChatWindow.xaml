@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mdxam="clr-namespace:MdXaml;assembly=MdXaml"
         xmlns:behaviors="clr-namespace:Floaticon.Views.Behaviors"
+        xmlns:views="clr-namespace:Floaticon.Views"
         Title="AI 助手"
         Width="456" Height="811"
         WindowStyle="None"
@@ -289,115 +290,14 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 写操作确认卡：write_file 等工具写入前请求人工放行 -->
-                <Border x:Name="ConfirmPanel"
-                        Grid.Column="0"
-                        HorizontalAlignment="Left"
-                        MaxWidth="360"
-                        Margin="0,0,40,0"
-                        CornerRadius="12,12,12,4"
-                        Background="#FFFBEB"
-                        BorderBrush="#F59E0B"
-                        BorderThickness="1"
-                        Padding="12,10"
-                        Visibility="Collapsed">
-                    <StackPanel>
-                        <TextBlock Text="{Binding ConfirmationTitle}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#92400E" />
-                        <TextBlock Text="{Binding ConfirmationPath, StringFormat=目标：{0}}"
-                                   FontSize="11"
-                                   Foreground="#6B7280"
-                                   TextWrapping="Wrap"
-                                   Margin="0,3,0,0" />
-
-                        <!-- 将写入内容的预览（等宽字体，超长滚动） -->
-                        <Border Background="#FFFFFF"
-                                BorderBrush="#FDE68A"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="8,6"
-                                Margin="0,8,0,0"
-                                MaxHeight="150">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <TextBlock Text="{Binding ConfirmationPreview}"
-                                           FontFamily="Consolas"
-                                           FontSize="11"
-                                           Foreground="#374151"
-                                           TextWrapping="Wrap" />
-                            </ScrollViewer>
-                        </Border>
-
-                        <!-- 同意 / 拒绝：决定后按钮整行隐藏，露出结果文本 -->
-                        <StackPanel x:Name="ConfirmButtons"
-                                    Orientation="Horizontal"
-                                    Margin="0,10,0,0">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ConfirmationPending}" Value="False">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-                            <Button Command="{Binding DataContext.ApproveConfirmationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}"
-                                    Cursor="Hand">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="ApproveBg" CornerRadius="6" Background="#16A34A" Padding="14,5">
-                                            <TextBlock Text="同意写入" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF" />
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="ApproveBg" Property="Background" Value="#15803D" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                            <Button Command="{Binding DataContext.DenyConfirmationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}"
-                                    Margin="8,0,0,0"
-                                    Cursor="Hand">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="DenyBg" CornerRadius="6" Background="#FFFFFF" BorderBrush="#D1D5DB" BorderThickness="1" Padding="14,5">
-                                            <TextBlock Text="拒绝" FontSize="12" Foreground="#374151" />
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="DenyBg" Property="Background" Value="#F3F4F6" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                        </StackPanel>
-
-                        <TextBlock x:Name="ConfirmOutcome"
-                                   Text="{Binding ConfirmationOutcome}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#92400E"
-                                   Margin="0,8,0,0">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding ConfirmationPending}" Value="False" />
-                                                <Condition Binding="{Binding IsConfirmation}" Value="True" />
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                </Border>
+                <!-- 写操作确认卡：write_file 等工具写入前请求人工放行（独立 UserControl + 专属 ViewModel） -->
+                <views:WriteConfirmationCard x:Name="ConfirmPanel"
+                                             Grid.Column="0"
+                                             HorizontalAlignment="Left"
+                                             MaxWidth="360"
+                                             Margin="0,0,40,0"
+                                             DataContext="{Binding ConfirmationCard}"
+                                             Visibility="Collapsed" />
 
                 <!-- 用户气泡（靠右，蓝色）+ 悬浮时在下方露出的时间/复制按钮。
                      整条消息行用一层透明 Background 的 Border 兜住（命中测试需要非 null 的画笔，

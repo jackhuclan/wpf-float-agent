@@ -297,6 +297,7 @@ dotnet run --project src/RecipeDemo
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
 | 1.8.0 | 2026-10-27 | 新增内置文件工具：`read_file`（带行号分页读，单行截断，二进制/超 10MB 拒绝）与 `write_file`（写前聊天窗确认卡人工放行，同意后覆盖写 + 自动建父目录，UTF-8 无 BOM）；`WorkspaceScope` 白名单（运行目录 + `config.json` 可选 `WorkspaceRoots`，动态生效），`config.json` 读写都拒防 API Key 泄露；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子双验证 |
+| 1.8.1 | 2026-10-27 | 重构：写操作确认卡从 ChatWindow 拆为独立控件 `WriteConfirmationCard`（UserControl）+ 专属 `ConfirmationCardViewModel`（同意/拒绝命令与确认状态内聚到卡片 VM，ChatViewModel 只负责把请求入列）；对外行为与 UI 不变 |
 | 1.7.2 | 2026-10-27 | 会话保存失败改用标准日志：ChatViewModel 注入 `ILogger<ChatViewModel>`（Microsoft.Extensions.Logging），Persist 失败由 Debug.WriteLine 升级为 `LogError`（含会话文件名与完整异常），宿主 Host builder 默认日志管道（Debug/Console/EventSource）自动接住 |
 | 1.7.1 | 2026-10-27 | 美化聊天窗标题栏按钮 hover 效果：＋/⚙ 悬停改为半透明白叠加（按下加深），关闭按钮悬停改 Windows 惯例红色高亮并转白字；配置窗关闭按钮同步修复，不再出现与靛蓝标题栏撞色的系统默认灰色高亮 |
 | 1.7.0 | 2026-10-27 | 拉平技能依据实际运行反馈优化：核心原则新增"事实只认两个来源 / 被质疑先定事实不迎合 / 返回值如实引用"三条与对应反例（杜绝编造已完成、迎合式改口、凭印象转述）；新增工具执行日志：所有工具调用自动记录（时间/名称/参数/结果/耗时），内置 `query_tool_history` 工具供模型查证调用历史；新建会话时日志清空 |
