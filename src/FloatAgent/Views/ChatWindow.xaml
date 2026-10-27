@@ -14,6 +14,63 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
+        <!-- 标题栏按钮：hover 用半透明白叠加，与靛蓝标题栏协调；按下稍加深 -->
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#E0E7FF" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="0,-2,0,0" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#26FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#40FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 关闭按钮：hover 红色高亮（Windows 惯例），前景转白 -->
+        <Style x:Key="TitleBarCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource TitleBarButtonStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="0,-2,0,0" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#E81123" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1707A" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Markdown 渲染样式：基于 MdXaml 内置 Compact（12px 正文、紧凑标题），字体换成雅黑 -->
         <Style x:Key="MdCompactStyle"
                TargetType="FlowDocument"
@@ -390,36 +447,27 @@
                                     VerticalAlignment="Center">
                             <!-- 新建会话（当前会话已按 guid 自动保存到 sessions/） -->
                             <Button Content="＋"
+                                    Style="{StaticResource TitleBarButtonStyle}"
                                     Width="28" Height="28"
                                     Margin="0,0,4,0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Foreground="#E0E7FF"
                                     FontSize="14"
-                                    Cursor="Hand"
                                     ToolTip="新建会话（当前会话已自动保存）"
                                     Command="{Binding NewSessionCommand}" />
 
                             <!-- 配置按钮 -->
                             <Button Content="⚙"
+                                    Style="{StaticResource TitleBarButtonStyle}"
                                     Width="28" Height="28"
                                     Margin="0,0,4,0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Foreground="#E0E7FF"
                                     FontSize="14"
-                                    Cursor="Hand"
                                     ToolTip="模型配置"
                                     Click="OnConfigClick" />
 
                             <!-- 关闭按钮 -->
                             <Button Content="✕"
+                                    Style="{StaticResource TitleBarCloseButtonStyle}"
                                     Width="28" Height="28"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Foreground="#E0E7FF"
                                     FontSize="12"
-                                    Cursor="Hand"
                                     ToolTip="收起"
                                     Click="OnCloseClick" />
                         </StackPanel>

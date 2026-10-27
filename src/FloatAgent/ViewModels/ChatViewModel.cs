@@ -2,12 +2,12 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Windows;
+using FloatAgent.Abstractions;
 using Floaticon.Models;
 using Floaticon.Services;
-using FloatAgent.Abstractions;
 
 namespace Floaticon.ViewModels;
 
@@ -18,7 +18,7 @@ namespace Floaticon.ViewModels;
 public partial class ChatViewModel : ObservableObject
 {
     private const string Greeting =
-        "你好，我是你的 AI 助手，已接入 DeepSeek。已加载技能：grill-me（方案拷问）、skill-creator（技能创作）、get-weather（天气查询），需要时我会自动调用。";
+        "你好，我是你的 AI 助手，请问我有什么能帮助你的...";
 
     private readonly IChatService _chatService;
     private readonly ToolProgressService _progress;
