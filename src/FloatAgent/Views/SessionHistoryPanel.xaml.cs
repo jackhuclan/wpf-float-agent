@@ -14,9 +14,49 @@ public partial class SessionHistoryPanel : UserControl
     public SessionHistoryPanel()
     {
         InitializeComponent();
+
+        // 抽屉收起（面板不可见）时关闭残留的弹出层：「…」Popup / 右键 ContextMenu
+        // 都是顶层 HWND，宿主隐藏后不会自动消失，必须显式关闭（1.9.2 修复）
+        IsVisibleChanged += OnPanelVisibleChanged;
     }
 
     private SessionHistoryViewModel? ViewModel => DataContext as SessionHistoryViewModel;
+
+    private void OnPanelVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is false)
+        {
+            CloseAllPopups(this);
+        }
+    }
+
+    /// <summary>关闭可视树内所有打开的 Popup / ContextMenu，并复位绑定其开合状态的 ToggleButton。</summary>
+    private static void CloseAllPopups(DependencyObject root)
+    {
+        var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+
+            if (child is System.Windows.Controls.Primitives.Popup { IsOpen: true } popup)
+            {
+                popup.IsOpen = false;
+            }
+
+            // ContextMenu 不是可视子节点（挂在 FrameworkElement.ContextMenu 属性上），按属性检查
+            if (child is FrameworkElement { ContextMenu.IsOpen: true } host)
+            {
+                host.ContextMenu!.IsOpen = false;
+            }
+
+            if (child is System.Windows.Controls.Primitives.ToggleButton { IsChecked: true } toggle)
+            {
+                toggle.IsChecked = false;
+            }
+
+            CloseAllPopups(child);
+        }
+    }
 
     /// <summary>行内重命名（FR-4.7）：Enter 确认、Esc 放弃；失焦视为确认（见 LostFocus）。</summary>
     private void OnRenameKeyDown(object sender, KeyEventArgs e)

@@ -13,6 +13,12 @@
         ResizeMode="NoResize">
 
     <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 细窄滚动条样式（与会话抽屉共用，见 ThinScrollBarStyles.xaml） -->
+                <ResourceDictionary Source="ThinScrollBarStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
         <!-- 标题栏按钮：hover 用半透明白叠加，与靛蓝标题栏协调；按下稍加深 -->
@@ -78,76 +84,6 @@
                BasedOn="{x:Static mdxam:MarkdownStyle.Compact}">
             <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
             <Setter Property="Foreground" Value="#1F2937" />
-        </Style>
-
-        <!-- 细窄滚动条（显式套用到自定义 ScrollViewer 模板中） -->
-        <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
-            <Setter Property="Width" Value="6" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="Transparent" Width="6">
-                            <Track x:Name="PART_Track"
-                                   IsDirectionReversed="True"
-                                   Minimum="{TemplateBinding Minimum}"
-                                   Maximum="{TemplateBinding Maximum}"
-                                   Value="{TemplateBinding Value}"
-                                   ViewportSize="{TemplateBinding ViewportSize}">
-                                <Track.Thumb>
-                                    <Thumb>
-                                        <Thumb.Template>
-                                            <ControlTemplate TargetType="Thumb">
-                                                <Border x:Name="ThumbBar"
-                                                        Background="#C9CEE0"
-                                                        CornerRadius="3"
-                                                        Margin="1,2" />
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="ThumbBar" Property="Background" Value="#A9B0C8" />
-                                                    </Trigger>
-                                                    <Trigger Property="IsDragging" Value="True">
-                                                        <Setter TargetName="ThumbBar" Property="Background" Value="#8E96B3" />
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Thumb.Template>
-                                    </Thumb>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- 消息区 ScrollViewer 模板：内容列 + 细窄纵向滚动条（结构对齐默认模板，保证拖拽/滚轮可用） -->
-        <Style x:Key="ThinScrollViewerStyle" TargetType="ScrollViewer">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollViewer">
-                        <Grid Background="{TemplateBinding Background}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ScrollContentPresenter Grid.Column="0"
-                                                    Margin="{TemplateBinding Padding}"
-                                                    CanContentScroll="{TemplateBinding CanContentScroll}" />
-                            <ScrollBar Grid.Column="1"
-                                       x:Name="PART_VerticalScrollBar"
-                                       Orientation="Vertical"
-                                       Style="{StaticResource ThinScrollBar}"
-                                       Cursor="Arrow"
-                                       Minimum="0"
-                                       Maximum="{TemplateBinding ScrollableHeight}"
-                                       ViewportSize="{TemplateBinding ViewportHeight}"
-                                       Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" />
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <!-- 消息气泡模板 -->
@@ -415,6 +351,7 @@
                 </MultiDataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
+        </ResourceDictionary>
     </Window.Resources>
 
     <!-- 外层留白给阴影 -->

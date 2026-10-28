@@ -397,6 +397,7 @@ RecipeDemo 的 alignment 技能（4 阶段 12 动作、含人工确认卡点）�
 
 | 版本节点         | 需求内容                                                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| V1.9.2 抽屉细节修复 | 修复：①抽屉收起后「…」弹出菜单/右键菜单残留——面板不可见时遍历可视树关闭所有 Popup/ContextMenu 并复位 ToggleButton；②抽屉滚动条与 ChatWindow 不一致——细窄滚动条样式抽成共享 ThinScrollBarStyles.xaml，两处同源引用；版本升至 1.9.2 |
 | V1.9.1 抽屉宽度修复 | 修复：`DrawerOverlay` 未定义列结构导致抽屉面板铺满聊天区（100% 宽），补齐与父级一致的两列定义，面板固定占 50% 宽、30% 黑遮罩覆盖全聊天区（FR-14.1 回归）；版本升至 1.9.1 |
 | V1.9 会话管理抽屉 | 新增 FR-14：标题栏左侧「☰」（替代装饰圆点）滑出覆盖式会话抽屉（220ms CubicEase + 30% 黑遮罩，点遮罩/« 收起，开新/切会话自动收起）——新建对话入抽屉（标题栏「＋」移除）、打开历史会话（ISessionStore 扩展 List/Load/Delete/Rename，切换先落盘当前再按角色/时间回填消息）、行内重命名（全选、Enter/Esc/失焦，TitleLocked 后自动标题不覆盖）、删除原位二次确认（删当前自动切最新一条，空则新建）、列表项「标题 + N 条消息 · 相对时间」+ 当前高亮、「…」/右键菜单同入口、坏文件降级跳过；TEMP-DEBUG 钩子验证（列表/切换/回填断言全过）后删除；版本升至 1.9.0 |
 | V1.8.1 确认卡控件化 | 重构：写操作确认卡从 ChatWindow 拆为独立控件 `WriteConfirmationCard`（UserControl，Views/）+ 专属 `ConfirmationCardViewModel`（ViewModels/）——请求引用、待决状态、结果文本与同意/拒绝命令内聚到卡片 VM，按钮直接绑定自身 DataContext（去掉 RelativeSource AncestorType=Window）；ChatMessage 的 6 个 Confirmation* 观察属性收敛为一个 `ConfirmationCard` 引用（IsConfirmation 变为派生属性）；ChatViewModel 只负责把请求入列（OnConfirmationRequested 构造卡片 VM）。对外 UI 与行为不变 |
