@@ -269,7 +269,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 - 点击配方树中的配方，**Summary 显示「当前选择的配方是：***」**；Wafer Map 初始只有「Create Wafer Map」按钮，点击后生成晶圆映射；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save。
 - **AI 工具与技能打通**：`skills/alignment/` 内置配方拉平标准作业流程技能（选择配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具在 ViewModel 中注册——`select_recipe` / `open_alignment` 在 `MainViewModel`，其余 9 个（视图切换、找圆心、创建模版、粗/精定位、define_llc、save_recipe）在 `AlignmentViewModel`，均通过注入 `IAIToolService` 调用 `AddTool` 注册，工具在后台线程调用、经 `AppHelper.DispatcherInvoke` 投递到 UI 线程改界面状态，失败分支（视图不对 / 模版未创建）按真实规则拦截。执行顺序与分支见[拉平技能流程图](docs/alignment-flow.md)。
 - **工具执行日志**：所有工具调用自动写入会话内日志（时间/名称/参数/结果/耗时），模型可用内置的 `query_tool_history` 工具查证"某一步是否真的执行过"，不凭记忆断言调用历史。
-- 主窗打开时同时显示 FloatAgent 的悬浮球，点击悬浮球弹出聊天窗；技能放在 `src/RecipeDemo/skills/`，构建时复制到 exe 旁。
+- 主窗打开时同时显示 FloatAgent 的悬浮球，点击悬浮球弹出聊天窗；**关闭主窗即整个应用退出**（含悬浮球，`ShutdownMode=OnMainWindowClose`），悬浮球右键菜单「退出」也可整体退出；技能放在 `src/RecipeDemo/skills/`，构建时复制到 exe 旁。
 
 ```bash
 dotnet run --project src/RecipeDemo
@@ -298,6 +298,7 @@ dotnet run --project src/RecipeDemo
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
 | 1.8.0 | 2026-10-27 | 新增内置文件工具：`read_file`（带行号分页读，单行截断，二进制/超 10MB 拒绝）与 `write_file`（写前聊天窗确认卡人工放行，同意后覆盖写 + 自动建父目录，UTF-8 无 BOM）；`WorkspaceScope` 白名单（运行目录 + `config.json` 可选 `WorkspaceRoots`，动态生效），`config.json` 读写都拒防 API Key 泄露；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子双验证 |
+| 1.9.4 | 2026-10-28 | RecipeDemo 生命周期调整：主窗（RecipeWindow）关闭时整个应用立即退出（含悬浮球与聊天窗），`ShutdownMode=OnMainWindowClose`；悬浮球右键「退出」仍可主动退出；GUI 探针实测关闭主窗后进程退出 |
 | 1.9.3 | 2026-10-28 | 会话抽屉交互简化：①列表项副标题去掉「N 条消息」，只保留相对日期；②删除会话不再创建新会话——删除当前会话直接加载最新一条回填（不经落盘），列表为空时聊天区清空为未落盘的空白会话（首次发消息才写盘），消除删除时产生的多余「新会话」文件；TEMP-DEBUG 探针双阶段验证（switched=True / finalFiles=0 / blank=True） |
 | 1.9.2 | 2026-10-28 | 会话抽屉细节修复：①抽屉收起后「…」弹出菜单/右键菜单残留不消失——`SessionHistoryPanel` 不可见时遍历可视树显式关闭所有 Popup/ContextMenu 并复位ToggleButton；②抽屉列表滚动条与 ChatWindow 消息区不一致——细窄滚动条样式抽成共享 `ThinScrollBarStyles.xaml` 字典，两处同源引用 |
 | 1.9.1 | 2026-10-28 | 修复会话抽屉宽度：`DrawerOverlay` 缺少列定义导致面板铺满整个聊天区（100% 宽），补齐与父级一致的两列结构，面板固定占 50% 宽、30% 黑遮罩覆盖全聊天区 |
