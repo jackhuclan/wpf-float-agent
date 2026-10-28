@@ -497,9 +497,13 @@
                         <ItemsControl x:Name="MessagesList" ItemTemplate="{StaticResource MessageTemplate}" />
                     </ScrollViewer>
 
-                    <!-- 会话抽屉覆盖层：半透明遮罩 + 左侧滑入面板（FR-3.1~3.4） -->
+                    <!-- 会话抽屉覆盖层：半透明遮罩 + 左侧滑入面板（FR-3.1~3.4）；列结构须与父级一致，面板固定占 50% 宽 -->
                     <Grid x:Name="DrawerOverlay" Grid.ColumnSpan="2" Visibility="Collapsed">
-                        <Rectangle x:Name="DrawerMask" Fill="#4D000000" MouseLeftButtonDown="OnDrawerMaskClick" />
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Rectangle x:Name="DrawerMask" Grid.ColumnSpan="2" Fill="#4D000000" MouseLeftButtonDown="OnDrawerMaskClick" />
                         <Border x:Name="DrawerPanel"
                                 Grid.Column="0"
                                 Background="#FFFFFF"

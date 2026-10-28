@@ -298,6 +298,7 @@ dotnet run --project src/RecipeDemo
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
 | 1.8.0 | 2026-10-27 | 新增内置文件工具：`read_file`（带行号分页读，单行截断，二进制/超 10MB 拒绝）与 `write_file`（写前聊天窗确认卡人工放行，同意后覆盖写 + 自动建父目录，UTF-8 无 BOM）；`WorkspaceScope` 白名单（运行目录 + `config.json` 可选 `WorkspaceRoots`，动态生效），`config.json` 读写都拒防 API Key 泄露；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子双验证 |
+| 1.9.1 | 2026-10-28 | 修复会话抽屉宽度：`DrawerOverlay` 缺少列定义导致面板铺满整个聊天区（100% 宽），补齐与父级一致的两列结构，面板固定占 50% 宽、30% 黑遮罩覆盖全聊天区 |
 | 1.8.1 | 2026-10-27 | 重构：写操作确认卡从 ChatWindow 拆为独立控件 `WriteConfirmationCard`（UserControl）+ 专属 `ConfirmationCardViewModel`（同意/拒绝命令与确认状态内聚到卡片 VM，ChatViewModel 只负责把请求入列）；对外行为与 UI 不变 |
 | 1.9.0 | 2026-10-27 | 新增会话管理抽屉（需求提取自 MegaAgent PRD FR-3/FR-4/B15）：标题栏左侧「☰」（替代原装饰圆点）滑出覆盖式抽屉——新建对话 / 打开历史会话（`ISessionStore` 新增 `List/Load/Delete/Rename`，切换时消息按角色与时间完整回填）/ 行内重命名（默认全选、Enter 确认、Esc 放弃、失焦确认，重命名后自动标题不再覆盖）/ 删除原位二次确认（删当前会话自动切到最新一条，列表空则新建）；列表项「标题 + N 条消息 · 相对时间」副标题，当前会话高亮；标题栏「＋」移除、新建对话入抽屉；损坏会话文件降级跳过不阻塞列表 |
 | 1.7.2 | 2026-10-27 | 会话保存失败改用标准日志：ChatViewModel 注入 `ILogger<ChatViewModel>`（Microsoft.Extensions.Logging），Persist 失败由 Debug.WriteLine 升级为 `LogError`（含会话文件名与完整异常），宿主 Host builder 默认日志管道（Debug/Console/EventSource）自动接住 |
