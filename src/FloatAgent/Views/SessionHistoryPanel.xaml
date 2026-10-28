@@ -217,14 +217,8 @@
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
-                                        <TextBlock FontSize="11" Margin="0,2,0,0">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0} · {1} 条消息">
-                                                    <Binding Path="DateText" />
-                                                    <Binding Path="MessageCount" />
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
+                                        <TextBlock FontSize="11" Margin="0,2,0,0"
+                                                   Text="{Binding DateText}" />
                                     </StackPanel>
 
                                     <!-- 行内重命名（FR-4.6）：替换标题区，Enter 确认 / Esc 放弃（见代码后置） -->

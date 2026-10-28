@@ -95,14 +95,19 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanNewSession))]
     private void NewSession()
     {
-        _cts?.Cancel();
+        ResetToBlankSession();
+        Persist();
+    }
 
-        Messages.Clear();
+    /// <summary>清空聊天区并指向一个尚未落盘的空会话（新建对话 / 删除最后一条会话后共用；落盘时机由 Persist 决定）。</summary>
+    private void ResetToBlankSession()
+    {
+        _cts?.Cancel();
         _session = _sessionStore.StartNewSession();
         _toolLog.Clear();   // 工具执行日志以会话为边界
+        Messages.Clear();
         Messages.Add(new ChatMessage(Greeting, isUser: false));
 
-        Persist();
         OnPropertyChanged(nameof(SessionId));
         OnPropertyChanged(nameof(SessionFilePath));
         History.Refresh(_session.SessionId);
@@ -123,6 +128,12 @@ public partial class ChatViewModel : ObservableObject
         }
 
         Persist();      // 先保存当前会话再切换
+        LoadSessionIntoView(loaded);
+    }
+
+    /// <summary>把一个已加载的会话回填到消息区并刷新界面状态（不改盘）。</summary>
+    private void LoadSessionIntoView(ChatSession loaded)
+    {
         _session = loaded;
 
         Messages.Clear();
@@ -146,7 +157,8 @@ public partial class ChatViewModel : ObservableObject
         History.Refresh(_session.SessionId);
     }
 
-    /// <summary>删除会话（FR-4.5/4.9）：删除当前会话则自动切换到最新的一条，列表空则新建。</summary>
+    /// <summary>删除会话（FR-4.5/4.9）：删除当前会话则切换到最新的一条；不创建新会话——
+    /// 列表为空时聊天区只清空为未落盘的空会话，首次发消息后才写盘。</summary>
     private void DeleteSessionCore(string sessionId)
     {
         // 生成中不允许删当前会话（避免流式回复往已删除的文件写）
@@ -163,16 +175,19 @@ public partial class ChatViewModel : ObservableObject
 
             if (next is not null)
             {
-                // 当前会话已删除：先把 _session 指到空会话，
-                // 避免 OpenSessionCore 内部的 Persist 把已删会话重新写回磁盘
-                _session = _sessionStore.StartNewSession();
-                OpenSessionCore(next.SessionId);
+                // 直接加载最新会话回填（不经 Persist：占位空会话不能写成新文件）
+                var loaded = _sessionStore.Load(next.SessionId);
+
+                if (loaded is not null)
+                {
+                    LoadSessionIntoView(loaded);
+                    return;
+                }
             }
-            else
-            {
-                NewSession();
-                return;
-            }
+
+            // 没有其他会话（或最新文件读取失败）：聊天区清空为空白会话，不创建新会话文件
+            ResetToBlankSession();
+            return;
         }
 
         History.Refresh(_session.SessionId);

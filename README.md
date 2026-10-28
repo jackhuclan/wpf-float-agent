@@ -298,6 +298,7 @@ dotnet run --project src/RecipeDemo
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
 | 1.8.0 | 2026-10-27 | 新增内置文件工具：`read_file`（带行号分页读，单行截断，二进制/超 10MB 拒绝）与 `write_file`（写前聊天窗确认卡人工放行，同意后覆盖写 + 自动建父目录，UTF-8 无 BOM）；`WorkspaceScope` 白名单（运行目录 + `config.json` 可选 `WorkspaceRoots`，动态生效），`config.json` 读写都拒防 API Key 泄露；确认卡不入会话 json；console 探针 26 用例 + GUI 钩子双验证 |
+| 1.9.3 | 2026-10-28 | 会话抽屉交互简化：①列表项副标题去掉「N 条消息」，只保留相对日期；②删除会话不再创建新会话——删除当前会话直接加载最新一条回填（不经落盘），列表为空时聊天区清空为未落盘的空白会话（首次发消息才写盘），消除删除时产生的多余「新会话」文件；TEMP-DEBUG 探针双阶段验证（switched=True / finalFiles=0 / blank=True） |
 | 1.9.2 | 2026-10-28 | 会话抽屉细节修复：①抽屉收起后「…」弹出菜单/右键菜单残留不消失——`SessionHistoryPanel` 不可见时遍历可视树显式关闭所有 Popup/ContextMenu 并复位ToggleButton；②抽屉列表滚动条与 ChatWindow 消息区不一致——细窄滚动条样式抽成共享 `ThinScrollBarStyles.xaml` 字典，两处同源引用 |
 | 1.9.1 | 2026-10-28 | 修复会话抽屉宽度：`DrawerOverlay` 缺少列定义导致面板铺满整个聊天区（100% 宽），补齐与父级一致的两列结构，面板固定占 50% 宽、30% 黑遮罩覆盖全聊天区 |
 | 1.8.1 | 2026-10-27 | 重构：写操作确认卡从 ChatWindow 拆为独立控件 `WriteConfirmationCard`（UserControl）+ 专属 `ConfirmationCardViewModel`（同意/拒绝命令与确认状态内聚到卡片 VM，ChatViewModel 只负责把请求入列）；对外行为与 UI 不变 |
