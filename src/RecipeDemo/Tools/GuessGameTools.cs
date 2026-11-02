@@ -11,8 +11,9 @@ namespace RecipeDemo.Tools;
 /// 猜数字游戏状态引擎（完整移植自 skills/guess-number-game/scripts/guess_game.py）。
 /// 设计原则：目标数字只在工具内部的进程内存里存在，除 reveal / end 外绝不输出，
 /// 模型无需也无法在上下文里携带真实答案，从根本上避免泄露。
-/// 对局状态（目标数字、轮次、次数）与自动猜测状态（可行范围、历史）全部保存在内存字典中，
+/// 对局状态（目标数字、轮次、次数）与自动猜测状态（可行范围、历史）全部保存在进程内存中，
 /// 不读写任何文件；进程退出即清空，下一次启动从「无对局」开始。
+/// 同一会话同一时刻只维护一个当前对局，不支持并行多局。
 /// 所有工具返回值统一为两行：第一行「状态：…」对应原脚本的退出码分支
 /// （继续=0 / 猜中=10 / 输入无效=11 / 无对局=12 / 用法错误=2 / 已结束=end 的正常收尾），
 /// 第二行起为与脚本 stdout 逐字一致的文案。
@@ -27,14 +28,14 @@ public sealed partial class GuessGameTools
     private const string MsgRoundOver = "本轮已经结束，请先开始新一轮游戏。";
     private const string MsgTooMany = "一次只能猜一个数字，请输入一个数字：";
 
-    /// <summary>状态读写互斥（同一 slot 的工具调用可能并发到达）。</summary>
+    /// <summary>状态读写互斥（工具调用可能并发到达）。</summary>
     private static readonly object Gate = new();
 
-    /// <summary>对局状态（进程内存，不落盘）：slot → 当前轮次状态。</summary>
-    private static readonly Dictionary<string, GameState> Games = new(StringComparer.Ordinal);
+    /// <summary>当前对局状态（进程内存，不落盘）；null 表示无对局。</summary>
+    private static GameState? CurrentGame;
 
-    /// <summary>自动猜测状态（进程内存，不落盘）：slot → 可行范围与猜测历史。</summary>
-    private static readonly Dictionary<string, AutoState> AutoGames = new(StringComparer.Ordinal);
+    /// <summary>当前自动猜测状态（进程内存，不落盘）：可行范围与猜测历史；null 表示无自动对局。</summary>
+    private static AutoState? CurrentAuto;
 
     /// <summary>界面进度广播（可选）：自动猜测把每轮的数字与判定推到“正在输入”气泡的状态行。</summary>
     private readonly ToolProgressService? _progress;
@@ -50,9 +51,7 @@ public sealed partial class GuessGameTools
         [Description("范围下界（含），未指定默认 1")]
         int? min,
         [Description("范围上界（含），未指定默认 100")]
-        int? max,
-        [Description("对局槽位，默认 default；只有需要并行多局时才传不同的槽位名")]
-        string? slot)
+        int? max)
     {
         lock (Gate)
         {
@@ -68,11 +67,10 @@ public sealed partial class GuessGameTools
                 return Result("用法错误", "用法错误：区间至少需要包含两个不同的整数。");
             }
 
-            var prev = Load(slot);
-            var roundNo = prev is null ? 1 : prev.Round + 1;
+            var roundNo = CurrentGame is null ? 1 : CurrentGame.Round + 1;
 
             var target = RandomNumberGenerator.GetInt32(lo, hi + 1);
-            Save(new GameState
+            var state = new GameState
             {
                 Target = target,
                 Min = lo,
@@ -80,7 +78,9 @@ public sealed partial class GuessGameTools
                 Round = roundNo,
                 Attempts = 0,
                 Status = "playing",
-            }, slot);
+            };
+            CurrentGame = state;
+            CurrentAuto = null;
 
             return Result("继续",
                 $"第 {roundNo} 轮游戏开始，我已想好一个 {lo} 到 {hi} 之间的整数。\n请输入一个数字：");
@@ -89,13 +89,11 @@ public sealed partial class GuessGameTools
 
     public string Guess(
         [Description("用户这条消息的原文，工具会自动抽取其中唯一的整数（支持全角数字、千分位与自然语言夹带）")]
-        string? input,
-        [Description("对局槽位，默认 default")]
-        string? slot)
+        string? input)
     {
         lock (Gate)
         {
-            var state = Load(slot);
+            var state = CurrentGame;
             if (state is null)
             {
                 return Result("无对局", MsgNoGame);
@@ -112,7 +110,7 @@ public sealed partial class GuessGameTools
                 return Result("输入无效", error);
             }
 
-            var (status, _, message) = JudgeGuess(state, guessValue!.Value, slot);
+            var (status, _, message) = JudgeGuess(state, guessValue!.Value);
             return Result(status, message);
         }
     }
@@ -122,13 +120,11 @@ public sealed partial class GuessGameTools
     /// 策略（<see cref="GuessGameAutoStrategy"/>）只依据自身的可行范围与判定反馈工作，
     /// 判定仍走与 guess_game_guess 完全相同的路径——次数统计、文案、胜负判定原样不变。
     /// </summary>
-    public string AutoGuess(
-        [Description("对局槽位，默认 default")]
-        string? slot)
+    public string AutoGuess()
     {
         lock (Gate)
         {
-            var state = Load(slot);
+            var state = CurrentGame;
             if (state is null)
             {
                 return Result("无对局", MsgNoGame);
@@ -140,7 +136,7 @@ public sealed partial class GuessGameTools
             }
 
             // 自动对局状态：换轮（轮次号变化）即重置可行范围为本局公布范围
-            var auto = LoadAuto(slot);
+            var auto = CurrentAuto;
             if (auto is null || auto.Round != state.Round)
             {
                 auto = new AutoState { Round = state.Round, Low = state.Min, High = state.Max };
@@ -149,7 +145,7 @@ public sealed partial class GuessGameTools
             var rangeLow = auto.Low;
             var rangeHigh = auto.High;
             var guess = GuessGameAutoStrategy.NextGuess(rangeLow, rangeHigh);
-            var (status, feedback, message) = JudgeGuess(state, guess, slot);
+            var (status, feedback, message) = JudgeGuess(state, guess);
             var label = feedback switch
             {
                 Feedback.Small => "小了",
@@ -161,7 +157,7 @@ public sealed partial class GuessGameTools
 
             if (feedback == Feedback.Win)
             {
-                DropAuto(slot);
+                CurrentAuto = null;
                 Report($"🎉 猜中了！第 {auto.History.Count} 次自动猜 {guess} 命中" +
                        $"｜历史：{string.Join("→", auto.History)}");
                 return Result("猜中",
@@ -174,7 +170,7 @@ public sealed partial class GuessGameTools
 
             (auto.Low, auto.High) = GuessGameAutoStrategy.Adjust(
                 rangeLow, rangeHigh, guess, tooSmall: feedback == Feedback.Small);
-            SaveAuto(auto, slot);
+            CurrentAuto = auto;
             Report($"🎯 自动猜第 {auto.History.Count} 次：{guess} → 判定：{label}" +
                    $"（下一轮范围 {auto.Low}-{auto.High}）｜历史：{string.Join("→", auto.History)}");
             return Result("继续",
@@ -186,13 +182,11 @@ public sealed partial class GuessGameTools
         }
     }
 
-    public string CheckStatus(
-        [Description("对局槽位，默认 default")]
-        string? slot)
+    public string CheckStatus()
     {
         lock (Gate)
         {
-            var state = Load(slot);
+            var state = CurrentGame;
             if (state is null)
             {
                 return Result("无对局", "没有进行中的对局。");
@@ -204,13 +198,11 @@ public sealed partial class GuessGameTools
         }
     }
 
-    public string Reveal(
-        [Description("对局槽位，默认 default")]
-        string? slot)
+    public string Reveal()
     {
         lock (Gate)
         {
-            var state = Load(slot);
+            var state = CurrentGame;
             if (state is null)
             {
                 return Result("无对局", "没有可揭示的数字，当前没有对局。");
@@ -223,13 +215,11 @@ public sealed partial class GuessGameTools
         }
     }
 
-    public string EndGame(
-        [Description("对局槽位，默认 default")]
-        string? slot)
+    public string EndGame()
     {
         lock (Gate)
         {
-            var state = Load(slot);
+            var state = CurrentGame;
             if (state is null)
             {
                 return Result("已结束", "游戏已结束。");
@@ -237,7 +227,8 @@ public sealed partial class GuessGameTools
 
             var (target, roundNo, attempts, won) =
                 (state.Target, state.Round, state.Attempts, state.Status == "won");
-            Drop(slot);
+            CurrentGame = null;
+            CurrentAuto = null;
             return Result("已结束",
                 $"游戏已结束，第 {roundNo} 轮的目标数字是 {target}（共猜 {attempts} 次，{(won ? "已猜中" : "未猜中")}）。");
         }
@@ -253,7 +244,7 @@ public sealed partial class GuessGameTools
     /// 越界不计次、命中置 won、文案与计数行为完全一致——保证自动模式不改变任何游戏规则。
     /// 返回（状态标签, 反馈, 文案）。
     /// </summary>
-    private (string Status, Feedback Feedback, string Message) JudgeGuess(GameState state, int guess, string? slot)
+    private (string Status, Feedback Feedback, string Message) JudgeGuess(GameState state, int guess)
     {
         if (guess < state.Min || guess > state.Max)
         {
@@ -263,18 +254,18 @@ public sealed partial class GuessGameTools
         state.Attempts++;
         if (guess < state.Target)
         {
-            Save(state, slot);
+            CurrentGame = state;
             return ("继续", Feedback.Small, MsgSmall);
         }
 
         if (guess > state.Target)
         {
-            Save(state, slot);
+            CurrentGame = state;
             return ("继续", Feedback.Big, MsgBig);
         }
 
         state.Status = "won";
-        Save(state, slot);
+        CurrentGame = state;
         return ("猜中", Feedback.Win, MsgWin);
     }
 
@@ -282,26 +273,6 @@ public sealed partial class GuessGameTools
 
     /// <summary>向聊天界面广播一条进度（无订阅者时空操作）。</summary>
     private void Report(string message) => _progress?.Report(message);
-
-    /// <summary>槽位名归一化：仅保留字母/数字/'-'/'_'，空值回落 default（纯内存键，不涉及路径）。</summary>
-    private static string SlotKey(string? slot)
-    {
-        var safe = new string(
-            (slot ?? "default").Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
-        return safe.Length == 0 ? "default" : safe;
-    }
-
-    private static GameState? Load(string? slot) => Games.GetValueOrDefault(SlotKey(slot));
-
-    private static void Save(GameState state, string? slot) => Games[SlotKey(slot)] = state;
-
-    private static void Drop(string? slot) => Games.Remove(SlotKey(slot));
-
-    private static AutoState? LoadAuto(string? slot) => AutoGames.GetValueOrDefault(SlotKey(slot));
-
-    private static void SaveAuto(AutoState state, string? slot) => AutoGames[SlotKey(slot)] = state;
-
-    private static void DropAuto(string? slot) => AutoGames.Remove(SlotKey(slot));
 
     /// <summary>全角转半角（NFKC）、去首尾空白，并去除千分位分隔符。</summary>
     private static string Normalize(string? raw) =>

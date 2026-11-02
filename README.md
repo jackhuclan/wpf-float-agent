@@ -259,7 +259,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 | `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消、每 5 秒上报执行进度，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
 | `thirdparty_long_run_task` | 工具 | 模拟第三方长任务（约 15 秒，内部无法上报进度）：由 `PeriodicProgressService` 在等待侧周期上报进度，返回执行结果；验证第三方方法的进度包装链路 |
 | `run_container_code` | 工具 | 基于 `Microsoft.Agents.AI.Tools.Shell` 的 `DockerShellExecutor`，在一次性 Linux 容器中执行 C# / Python / JavaScript 代码（宿主机无需运行时）：脚本支持路径或内联代码、base64 写入后执行、网络隔离 + 1 GiB 内存上限 + 180 秒超时、每 5 秒上报进度；C# 在容器内生成离线可 restore 的迷你工程编译执行（不访问网络）；首次运行需拉取镜像 |
-| `guess_game_*` | 工具 | 猜数字游戏状态引擎（原 python 脚本移植为 C#）：`start` / `guess` / `auto` / `status` / `reveal` / `end` 六个工具，目标数字只存在于工具的进程内存中、绝不进入对话上下文，也不写任何记录文件，返回值首行「状态：」承载原退出码分支语义；`auto` 由二分策略依据上次反馈自动猜（替代人工输入） |
+| `guess_game_*` | 工具 | 猜数字游戏状态引擎（原 python 脚本移植为 C#）：`start` / `guess` / `auto` / `status` / `reveal` / `end` 六个工具，目标数字只存在于工具的进程内存中、绝不进入对话上下文，也不写任何记录文件，返回值首行「状态：」承载原退出码分支语义；`auto` 由二分策略依据上次反馈自动猜（替代人工输入）；同一会话只维护一个当前对局，所有工具均无槽位参数 |
 
 ## RecipeDemo 演示外壳
 
@@ -270,7 +270,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 - 点击配方树中的配方，**Summary 显示「当前选择的配方是：***」**；Wafer Map 初始只有「Create Wafer Map」按钮，点击后生成晶圆映射；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save。
 - **AI 工具与技能打通**：`skills/alignment/` 内置配方拉平标准作业流程技能（选择配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具在 ViewModel 中注册——`select_recipe` / `open_alignment` 在 `MainViewModel`，其余 9 个（视图切换、找圆心、创建模版、粗/精定位、define_llc、save_recipe）在 `AlignmentViewModel`，均通过注入 `IAIToolService` 调用 `AddTool` 注册，工具在后台线程调用、经 `AppHelper.DispatcherInvoke` 投递到 UI 线程改界面状态，失败分支（视图不对 / 模版未创建）按真实规则拦截。执行顺序与分支见[拉平技能流程图](docs/alignment-flow.md)。
 - **工具执行日志**：所有工具调用自动写入会话内日志（时间/名称/参数/结果/耗时），模型可用内置的 `query_tool_history` 工具查证"某一步是否真的执行过"，不凭记忆断言调用历史。
-- **猜数字游戏技能**：`skills/guess-number-game/` 的判定引擎已由 python 脚本移植为 C# 工具类 `GuessGameTools`（`src/RecipeDemo/Tools/`），启动时注册 `guess_game_start` / `guess_game_guess` / `guess_game_auto` / `guess_game_status` / `guess_game_reveal` / `guess_game_end` 六个工具；`auto` 用独立的二分策略类（无法获知目标数字）自动猜测替代人工输入；对局与自动猜测状态全部保存在进程内存（按 slot 分区），**不读写任何记录文件**，进程退出即清空；SKILL.md 全部改为工具调用，不再依赖 python 运行时。
+- **猜数字游戏技能**：`skills/guess-number-game/` 的判定引擎已由 python 脚本移植为 C# 工具类 `GuessGameTools`（`src/RecipeDemo/Tools/`），启动时注册 `guess_game_start` / `guess_game_guess` / `guess_game_auto` / `guess_game_status` / `guess_game_reveal` / `guess_game_end` 六个工具；`auto` 用独立的二分策略类（无法获知目标数字）自动猜测替代人工输入；对局与自动猜测状态全部保存在进程内存（同一会话仅一个当前对局，无槽位），**不读写任何记录文件**，进程退出即清空；SKILL.md 全部改为工具调用，不再依赖 python 运行时。
 - 主窗打开时同时显示 FloatAgent 的悬浮球，点击悬浮球弹出聊天窗；**关闭主窗即整个应用退出**（含悬浮球，`ShutdownMode=OnMainWindowClose`），悬浮球右键菜单「退出」也可整体退出；技能放在 `src/RecipeDemo/skills/`，构建时复制到 exe 旁。
 
 ```bash
@@ -299,6 +299,7 @@ dotnet run --project src/RecipeDemo
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.14.0 | 2026-11-02 | 移除猜数字游戏的 `slot` 对局槽位设计：六个工具全部去掉 `slot` 参数（注册委托签名同步收窄），进程内状态从「按 slot 分区的字典」收敛为单一当前对局（`CurrentGame` / `CurrentAuto` 静态字段），开局/结束/猜中时整体复位；同一会话同一时刻只维护一个当前对局，行为、文案、判定规则、进度上报不变；探针实测 12 项（无对局/开局/非法输入/多数字/自动猜 6 次收敛/轮次延续/结束）全过，验证后探针已删 |
 | 1.13.0 | 2026-11-02 | 猜数字技能改为**纯内存状态**：删除 `%TEMP%\guess-number-game\*.json` 的全部读写/存储逻辑（状态路径、JSON 序列化、文件读写与删除），对局状态与自动猜测状态改存进程内字典（按 slot 分区、`Gate` 保护），进程退出即清空；行为、文案、判定规则、返回格式全部不变；探针验证开局/手动猜/自动猜中/状态/揭示/结束全链路正常，且打完整局后临时目录不存在（零落盘） |
 | 1.12.0 | 2026-11-02 | 自动猜测接入界面进度：`GuessGameTools` 注入 `ToolProgressService`（可选依赖，与 `LongRunningTool` 同机制），`guess_game_auto` 每轮通过广播把「第 N 次：数字 → 判定：小了/大了（下一轮范围 x-y）｜历史：…」推到聊天窗“正在输入”气泡的状态行，猜中推送「🎉 猜中了！第 N 次自动猜 M 命中｜历史：…」，进度行含完整历史不会被覆盖丢失；探针验证 6 次调用对应 6 条进度、逐轮数字与判定齐全 |
 | 1.11.1 | 2026-11-02 | `guess_game_auto` 每次返回显式配对本次猜测数字与判定结果：「自动猜测：N → 判定：小了/大了/猜中（在可行范围 x-y 内取中点）」，本局自动历史同样带判定标签（如 `50（小了）→75（大了）→63（猜中）`）；顺带修正策略说明中取中点范围显示为调整前范围；SKILL.md 示例同步 |

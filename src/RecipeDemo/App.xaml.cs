@@ -74,7 +74,7 @@ public partial class App : Application
         services.AddSingleton(sp => new WorkspaceScope(sp.GetRequiredService<IConfigService>(), AppContext.BaseDirectory));
         services.AddSingleton<FileTools>();
 
-        // 猜数字游戏工具：目标数字只存在于工具内部与状态文件，不进入对话上下文
+        // 猜数字游戏工具：目标数字只存在于工具内部的进程内存，不进入对话上下文
         services.AddSingleton<RecipeDemo.Tools.GuessGameTools>();
 
         // 聊天窗 Hide 复用，必须是单例；配置窗 Close 后不可复用，用瞬时
@@ -109,12 +109,12 @@ public partial class App : Application
 
         // 猜数字游戏工具（skills/guess-number-game，已由 python 脚本移植为 C#）
         var guessTools = services.GetRequiredService<RecipeDemo.Tools.GuessGameTools>();
-        Func<int?, int?, string?, string> gameStart = guessTools.StartGame;
-        Func<string?, string?, string> gameGuess = guessTools.Guess;
-        Func<string?, string> gameStatus = guessTools.CheckStatus;
-        Func<string?, string> gameReveal = guessTools.Reveal;
-        Func<string?, string> gameEnd = guessTools.EndGame;
-        Func<string?, string> gameAuto = guessTools.AutoGuess;
+        Func<int?, int?, string> gameStart = guessTools.StartGame;
+        Func<string?, string> gameGuess = guessTools.Guess;
+        Func<string> gameStatus = guessTools.CheckStatus;
+        Func<string> gameReveal = guessTools.Reveal;
+        Func<string> gameEnd = guessTools.EndGame;
+        Func<string> gameAuto = guessTools.AutoGuess;
         registry.AddTool(AIFunctionFactory.Create(gameStart, "guess_game_start",
             "开始新一轮猜数字游戏：随机生成目标数字（绝不外泄）。未指定范围时默认 1-100。返回以「状态：」开头的结果。"));
         registry.AddTool(AIFunctionFactory.Create(gameGuess, "guess_game_guess",
