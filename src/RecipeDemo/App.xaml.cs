@@ -114,6 +114,7 @@ public partial class App : Application
         Func<string?, string> gameStatus = guessTools.CheckStatus;
         Func<string?, string> gameReveal = guessTools.Reveal;
         Func<string?, string> gameEnd = guessTools.EndGame;
+        Func<string?, string> gameAuto = guessTools.AutoGuess;
         registry.AddTool(AIFunctionFactory.Create(gameStart, "guess_game_start",
             "开始新一轮猜数字游戏：随机生成目标数字（绝不外泄）。未指定范围时默认 1-100。返回以「状态：」开头的结果。"));
         registry.AddTool(AIFunctionFactory.Create(gameGuess, "guess_game_guess",
@@ -124,6 +125,8 @@ public partial class App : Application
             "揭示上一轮猜数字游戏的目标数字（仅在本轮已猜中后有效）。"));
         registry.AddTool(AIFunctionFactory.Create(gameEnd, "guess_game_end",
             "结束猜数字游戏并输出总结（含目标数字）。"));
+        registry.AddTool(AIFunctionFactory.Create(gameAuto, "guess_game_auto",
+            "自动猜一数字：策略只依据上次「大了/小了」反馈在可行范围内取中点并自动提交，替代人工输入；每调用一次猜一个数字，判定规则与 guess_game_guess 完全相同，直到状态为「猜中」。"));
     }
 
     protected override void OnExit(ExitEventArgs e)

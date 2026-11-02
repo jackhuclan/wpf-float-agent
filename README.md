@@ -259,7 +259,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 | `run_long_task` | 工具 | 长耗时任务（固定 2 分钟）：逐秒切片等待、支持中途取消、每 5 秒上报执行进度，返回任务名 / 起止时间 / 实际耗时；用于验证工具长时间占用时 Agent 仍能续答 |
 | `thirdparty_long_run_task` | 工具 | 模拟第三方长任务（约 15 秒，内部无法上报进度）：由 `PeriodicProgressService` 在等待侧周期上报进度，返回执行结果；验证第三方方法的进度包装链路 |
 | `run_container_code` | 工具 | 基于 `Microsoft.Agents.AI.Tools.Shell` 的 `DockerShellExecutor`，在一次性 Linux 容器中执行 C# / Python / JavaScript 代码（宿主机无需运行时）：脚本支持路径或内联代码、base64 写入后执行、网络隔离 + 1 GiB 内存上限 + 180 秒超时、每 5 秒上报进度；C# 在容器内生成离线可 restore 的迷你工程编译执行（不访问网络）；首次运行需拉取镜像 |
-| `guess_game_*` | 工具 | 猜数字游戏状态引擎（原 python 脚本移植为 C#）：`start` / `guess` / `status` / `reveal` / `end` 五个工具，目标数字只存在于工具内部与状态文件中绝不进入对话上下文，返回值首行「状态：」承载原退出码分支语义 |
+| `guess_game_*` | 工具 | 猜数字游戏状态引擎（原 python 脚本移植为 C#）：`start` / `guess` / `auto` / `status` / `reveal` / `end` 六个工具，目标数字只存在于工具内部与状态文件中绝不进入对话上下文，返回值首行「状态：」承载原退出码分支语义；`auto` 由二分策略依据上次反馈自动猜（替代人工输入） |
 
 ## RecipeDemo 演示外壳
 
@@ -270,7 +270,7 @@ registry.AddTool(AIFunctionFactory.Create(run, "thirdparty_long_run_task", "第�
 - 点击配方树中的配方，**Summary 显示「当前选择的配方是：***」**；Wafer Map 初始只有「Create Wafer Map」按钮，点击后生成晶圆映射；Alignment 为 Edge / Coarse / Fine 箭头式子标签（Caculate、Create Template + Run）+ 右下角 Save。
 - **AI 工具与技能打通**：`skills/alignment/` 内置配方拉平标准作业流程技能（选择配方 → 圆心定位 → 粗定位 → 精定位 → Updating LLC → 保存，含人工确认卡点）；对应 11 个 AI 工具在 ViewModel 中注册——`select_recipe` / `open_alignment` 在 `MainViewModel`，其余 9 个（视图切换、找圆心、创建模版、粗/精定位、define_llc、save_recipe）在 `AlignmentViewModel`，均通过注入 `IAIToolService` 调用 `AddTool` 注册，工具在后台线程调用、经 `AppHelper.DispatcherInvoke` 投递到 UI 线程改界面状态，失败分支（视图不对 / 模版未创建）按真实规则拦截。执行顺序与分支见[拉平技能流程图](docs/alignment-flow.md)。
 - **工具执行日志**：所有工具调用自动写入会话内日志（时间/名称/参数/结果/耗时），模型可用内置的 `query_tool_history` 工具查证"某一步是否真的执行过"，不凭记忆断言调用历史。
-- **猜数字游戏技能**：`skills/guess-number-game/` 的判定引擎已由 python 脚本移植为 C# 工具类 `GuessGameTools`（`src/RecipeDemo/Tools/`），启动时注册 `guess_game_start` / `guess_game_guess` / `guess_game_status` / `guess_game_reveal` / `guess_game_end` 五个工具；SKILL.md 全部改为工具调用，不再依赖 python 运行时。
+- **猜数字游戏技能**：`skills/guess-number-game/` 的判定引擎已由 python 脚本移植为 C# 工具类 `GuessGameTools`（`src/RecipeDemo/Tools/`），启动时注册 `guess_game_start` / `guess_game_guess` / `guess_game_auto` / `guess_game_status` / `guess_game_reveal` / `guess_game_end` 六个工具；`auto` 用独立的二分策略类（无法获知目标数字）自动猜测替代人工输入；SKILL.md 全部改为工具调用，不再依赖 python 运行时。
 - 主窗打开时同时显示 FloatAgent 的悬浮球，点击悬浮球弹出聊天窗；**关闭主窗即整个应用退出**（含悬浮球，`ShutdownMode=OnMainWindowClose`），悬浮球右键菜单「退出」也可整体退出；技能放在 `src/RecipeDemo/skills/`，构建时复制到 exe 旁。
 
 ```bash
@@ -299,6 +299,7 @@ dotnet run --project src/RecipeDemo
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.11.0 | 2026-11-02 | 猜数字游戏新增自动猜测工具 `guess_game_auto`：二分策略（独立 `GuessGameAutoStrategy` 纯函数类，不接触状态文件、结构上无法获知目标数字）依据上次「大了/小了」反馈在可行范围内取中点并自动提交，替代人工输入；判定走与 `guess_game_guess` 完全相同的路径（规则与胜负判定不变）；自动状态文件 `<slot>.auto.json` 记录轮次/可行范围/猜测历史，猜中即删、换轮自动重置；TEMP-DEBUG 探针验证：1-100 目标 63 六次收敛 `50→75→62→68→65→63`，手动混猜后自动接管仍正确收敛 |
 | 1.10.0 | 2026-11-02 | 猜数字游戏引擎移植：`skills/guess-number-game` 的 `guess_game.py` 完整移植为 C# 工具 `GuessGameTools`（状态文件 / NFKC 归一化 / 数字抽取 / 全部固定文案 1:1 保留），注册 5 个工具 `guess_game_start` / `guess_game_guess` / `guess_game_status` / `guess_game_reveal` / `guess_game_end`，返回值首行「状态：」对应原退出码分支；SKILL.md 调用方式全部改为工具调用，不再依赖 python；19 分支探针与 python 脚本输出逐字比对一致 |
 | 1.9.4 | 2026-10-28 | RecipeDemo 生命周期调整：主窗（RecipeWindow）关闭时整个应用立即退出（含悬浮球与聊天窗），`ShutdownMode=OnMainWindowClose`；悬浮球右键「退出」仍可主动退出；GUI 探针实测关闭主窗后进程退出 |
 | 1.9.3 | 2026-10-28 | 会话抽屉交互简化：①列表项副标题去掉「N 条消息」，只保留相对日期；②删除会话不再创建新会话——删除当前会话直接加载最新一条回填（不经落盘），列表为空时聊天区清空为未落盘的空白会话（首次发消息才写盘），消除删除时产生的多余「新会话」文件；TEMP-DEBUG 探针双阶段验证（switched=True / finalFiles=0 / blank=True） |

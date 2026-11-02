@@ -104,33 +104,70 @@ public sealed partial class GuessGameTools
                 return Result("无对局", MsgRoundOver);
             }
 
-            var (guess, error) = ParseGuess(input);
+            var (guessValue, error) = ParseGuess(input);
             if (error is not null)
             {
                 return Result("输入无效", error);
             }
 
-            if (guess < state.Min || guess > state.Max)
+            var (status, _, message) = JudgeGuess(state, guessValue!.Value, slot);
+            return Result(status, message);
+        }
+    }
+
+    /// <summary>
+    /// 自动猜测：由策略按上次反馈自动决定并提交本次猜测，替代人工输入。
+    /// 策略（<see cref="GuessGameAutoStrategy"/>）只依据自身的可行范围与判定反馈工作，
+    /// 判定仍走与 guess_game_guess 完全相同的路径——次数统计、文案、胜负判定原样不变。
+    /// </summary>
+    public string AutoGuess(
+        [Description("对局槽位，默认 default")]
+        string? slot)
+    {
+        lock (Gate)
+        {
+            var state = Load(slot);
+            if (state is null)
             {
-                return Result("输入无效", $"输入无效：请输入 {state.Min} 到 {state.Max} 之间的整数。");
+                return Result("无对局", MsgNoGame);
             }
 
-            state.Attempts++;
-            if (guess < state.Target)
+            if (state.Status != "playing")
             {
-                Save(state, slot);
-                return Result("继续", MsgSmall);
+                return Result("无对局", MsgRoundOver);
             }
 
-            if (guess > state.Target)
+            // 自动对局状态：换轮（轮次号变化）即重置可行范围为本局公布范围
+            var auto = LoadAuto(slot);
+            if (auto is null || auto.Round != state.Round)
             {
-                Save(state, slot);
-                return Result("继续", MsgBig);
+                auto = new AutoState { Round = state.Round, Low = state.Min, High = state.Max };
             }
 
-            state.Status = "won";
-            Save(state, slot);
-            return Result("猜中", MsgWin);
+            var guess = GuessGameAutoStrategy.NextGuess(auto.Low, auto.High);
+            var (status, feedback, message) = JudgeGuess(state, guess, slot);
+            auto.History.Add(guess);
+
+            if (feedback == Feedback.Win)
+            {
+                DropAuto(slot);
+                return Result("猜中",
+                    $"自动猜测：{guess}\n" +
+                    $"{message}\n" +
+                    $"本局自动猜测完成，共自动猜 {auto.History.Count} 次，" +
+                    $"历史：{string.Join("→", auto.History)}（游戏累计已猜 {state.Attempts} 次，与 guess_game_status 一致）\n" +
+                    "按原流程询问用户是否开始下一轮游戏。");
+            }
+
+            (auto.Low, auto.High) = GuessGameAutoStrategy.Adjust(
+                auto.Low, auto.High, guess, tooSmall: feedback == Feedback.Small);
+            SaveAuto(auto, slot);
+            return Result("继续",
+                $"自动猜测：{guess}（策略依据上次反馈在 {auto.Low}-{auto.High} 内取中点）\n" +
+                $"{message}\n" +
+                $"当前可行范围：{auto.Low}-{auto.High}，本局自动历史：{string.Join("→", auto.History)}，" +
+                $"游戏累计已猜 {state.Attempts} 次\n" +
+                "继续调用 guess_game_auto 进行下一次自动猜测，直到状态为「猜中」。");
         }
     }
 
@@ -193,6 +230,39 @@ public sealed partial class GuessGameTools
 
     // ------------------------------------------------------------- internals
 
+    /// <summary>判定反馈（供自动策略收缩范围用）。</summary>
+    private enum Feedback { Invalid, Small, Big, Win }
+
+    /// <summary>
+    /// 共用判定路径：guess_game_guess 与 guess_game_auto 都经由本方法判定，
+    /// 越界不计次、命中置 won、文案与落盘行为完全一致——保证自动模式不改变任何游戏规则。
+    /// 返回（状态标签, 反馈, 文案）。
+    /// </summary>
+    private (string Status, Feedback Feedback, string Message) JudgeGuess(GameState state, int guess, string? slot)
+    {
+        if (guess < state.Min || guess > state.Max)
+        {
+            return ("输入无效", Feedback.Invalid, $"输入无效：请输入 {state.Min} 到 {state.Max} 之间的整数。");
+        }
+
+        state.Attempts++;
+        if (guess < state.Target)
+        {
+            Save(state, slot);
+            return ("继续", Feedback.Small, MsgSmall);
+        }
+
+        if (guess > state.Target)
+        {
+            Save(state, slot);
+            return ("继续", Feedback.Big, MsgBig);
+        }
+
+        state.Status = "won";
+        Save(state, slot);
+        return ("猜中", Feedback.Win, MsgWin);
+    }
+
     private static string Result(string status, string message) => $"状态：{status}\n{message}";
 
     private static string StatePath(string? slot)
@@ -244,6 +314,60 @@ public sealed partial class GuessGameTools
             catch (IOException)
             {
                 // 与脚本一致：删除失败静默忽略
+            }
+        }
+    }
+
+    /// <summary>自动对局状态文件（&lt;slot&gt;.auto.json），只存可行范围与猜测历史，不含目标数字。</summary>
+    private static string AutoStatePath(string? slot)
+    {
+        var baseDir = Path.Combine(Path.GetTempPath(), "guess-number-game");
+        Directory.CreateDirectory(baseDir);
+        var safe = new string(
+            (slot ?? "default").Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
+        if (safe.Length == 0)
+        {
+            safe = "default";
+        }
+
+        return Path.Combine(baseDir, $"{safe}.auto.json");
+    }
+
+    private static AutoState? LoadAuto(string? slot)
+    {
+        var path = AutoStatePath(slot);
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(path);
+            var data = JsonSerializer.Deserialize<AutoState>(stream);
+            return data is { Version: StateVersion } ? data : null;
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static void SaveAuto(AutoState state, string? slot) =>
+        File.WriteAllText(AutoStatePath(slot), JsonSerializer.Serialize(state, JsonOptions), new UTF8Encoding(false));
+
+    private static void DropAuto(string? slot)
+    {
+        var path = AutoStatePath(slot);
+        if (File.Exists(path))
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (IOException)
+            {
+                // 删除失败静默忽略：下次调用会因轮次号不一致而重置
             }
         }
     }
@@ -304,6 +428,25 @@ public sealed partial class GuessGameTools
         }
 
         return (null, MsgInvalid);
+    }
+
+    /// <summary>自动对局状态：只含轮次号、可行范围与猜测历史——没有目标数字，泄露面为零。</summary>
+    private sealed class AutoState
+    {
+        [JsonPropertyName("version")]
+        public int Version { get; set; } = StateVersion;
+
+        [JsonPropertyName("round")]
+        public int Round { get; set; }
+
+        [JsonPropertyName("low")]
+        public int Low { get; set; }
+
+        [JsonPropertyName("high")]
+        public int High { get; set; }
+
+        [JsonPropertyName("history")]
+        public List<int> History { get; set; } = [];
     }
 
     /// <summary>状态模型，JSON 字段名与 python 脚本写入的键完全一致（可互读对方的状态文件）。</summary>
