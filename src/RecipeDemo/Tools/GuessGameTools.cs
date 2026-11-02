@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using FloatAgent.Abstractions;
 
 namespace RecipeDemo.Tools;
 
@@ -32,6 +33,11 @@ public sealed partial class GuessGameTools
 
     /// <summary>状态文件读写互斥（同一 slot 的工具调用可能并发到达）。</summary>
     private static readonly object Gate = new();
+
+    /// <summary>界面进度广播（可选）：自动猜测把每轮的数字与判定推到“正在输入”气泡的状态行。</summary>
+    private readonly ToolProgressService? _progress;
+
+    public GuessGameTools(ToolProgressService? progress = null) => _progress = progress;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -160,6 +166,8 @@ public sealed partial class GuessGameTools
             if (feedback == Feedback.Win)
             {
                 DropAuto(slot);
+                Report($"🎉 猜中了！第 {auto.History.Count} 次自动猜 {guess} 命中" +
+                       $"｜历史：{string.Join("→", auto.History)}");
                 return Result("猜中",
                     $"自动猜测：{guess} → 判定：猜中\n" +
                     $"{message}\n" +
@@ -171,6 +179,8 @@ public sealed partial class GuessGameTools
             (auto.Low, auto.High) = GuessGameAutoStrategy.Adjust(
                 rangeLow, rangeHigh, guess, tooSmall: feedback == Feedback.Small);
             SaveAuto(auto, slot);
+            Report($"🎯 自动猜第 {auto.History.Count} 次：{guess} → 判定：{label}" +
+                   $"（下一轮范围 {auto.Low}-{auto.High}）｜历史：{string.Join("→", auto.History)}");
             return Result("继续",
                 $"自动猜测：{guess} → 判定：{label}（在可行范围 {rangeLow}-{rangeHigh} 内取中点）\n" +
                 $"{message}\n" +
@@ -273,6 +283,9 @@ public sealed partial class GuessGameTools
     }
 
     private static string Result(string status, string message) => $"状态：{status}\n{message}";
+
+    /// <summary>向聊天界面广播一条进度（无订阅者时空操作）。</summary>
+    private void Report(string message) => _progress?.Report(message);
 
     private static string StatePath(string? slot)
     {

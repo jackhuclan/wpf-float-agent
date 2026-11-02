@@ -299,6 +299,7 @@ dotnet run --project src/RecipeDemo
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.12.0 | 2026-11-02 | 自动猜测接入界面进度：`GuessGameTools` 注入 `ToolProgressService`（可选依赖，与 `LongRunningTool` 同机制），`guess_game_auto` 每轮通过广播把「第 N 次：数字 → 判定：小了/大了（下一轮范围 x-y）｜历史：…」推到聊天窗“正在输入”气泡的状态行，猜中推送「🎉 猜中了！第 N 次自动猜 M 命中｜历史：…」，进度行含完整历史不会被覆盖丢失；探针验证 6 次调用对应 6 条进度、逐轮数字与判定齐全 |
 | 1.11.1 | 2026-11-02 | `guess_game_auto` 每次返回显式配对本次猜测数字与判定结果：「自动猜测：N → 判定：小了/大了/猜中（在可行范围 x-y 内取中点）」，本局自动历史同样带判定标签（如 `50（小了）→75（大了）→63（猜中）`）；顺带修正策略说明中取中点范围显示为调整前范围；SKILL.md 示例同步 |
 | 1.11.0 | 2026-11-02 | 猜数字游戏新增自动猜测工具 `guess_game_auto`：二分策略（独立 `GuessGameAutoStrategy` 纯函数类，不接触状态文件、结构上无法获知目标数字）依据上次「大了/小了」反馈在可行范围内取中点并自动提交，替代人工输入；判定走与 `guess_game_guess` 完全相同的路径（规则与胜负判定不变）；自动状态文件 `<slot>.auto.json` 记录轮次/可行范围/猜测历史，猜中即删、换轮自动重置；TEMP-DEBUG 探针验证：1-100 目标 63 六次收敛 `50→75→62→68→65→63`，手动混猜后自动接管仍正确收敛 |
 | 1.10.0 | 2026-11-02 | 猜数字游戏引擎移植：`skills/guess-number-game` 的 `guess_game.py` 完整移植为 C# 工具 `GuessGameTools`（状态文件 / NFKC 归一化 / 数字抽取 / 全部固定文案 1:1 保留），注册 5 个工具 `guess_game_start` / `guess_game_guess` / `guess_game_status` / `guess_game_reveal` / `guess_game_end`，返回值首行「状态：」对应原退出码分支；SKILL.md 调用方式全部改为工具调用，不再依赖 python；19 分支探针与 python 脚本输出逐字比对一致 |
