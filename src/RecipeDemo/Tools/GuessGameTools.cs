@@ -144,15 +144,24 @@ public sealed partial class GuessGameTools
                 auto = new AutoState { Round = state.Round, Low = state.Min, High = state.Max };
             }
 
-            var guess = GuessGameAutoStrategy.NextGuess(auto.Low, auto.High);
+            var rangeLow = auto.Low;
+            var rangeHigh = auto.High;
+            var guess = GuessGameAutoStrategy.NextGuess(rangeLow, rangeHigh);
             var (status, feedback, message) = JudgeGuess(state, guess, slot);
-            auto.History.Add(guess);
+            var label = feedback switch
+            {
+                Feedback.Small => "小了",
+                Feedback.Big => "大了",
+                Feedback.Win => "猜中",
+                _ => "输入无效",
+            };
+            auto.History.Add($"{guess}（{label}）");
 
             if (feedback == Feedback.Win)
             {
                 DropAuto(slot);
                 return Result("猜中",
-                    $"自动猜测：{guess}\n" +
+                    $"自动猜测：{guess} → 判定：猜中\n" +
                     $"{message}\n" +
                     $"本局自动猜测完成，共自动猜 {auto.History.Count} 次，" +
                     $"历史：{string.Join("→", auto.History)}（游戏累计已猜 {state.Attempts} 次，与 guess_game_status 一致）\n" +
@@ -160,10 +169,10 @@ public sealed partial class GuessGameTools
             }
 
             (auto.Low, auto.High) = GuessGameAutoStrategy.Adjust(
-                auto.Low, auto.High, guess, tooSmall: feedback == Feedback.Small);
+                rangeLow, rangeHigh, guess, tooSmall: feedback == Feedback.Small);
             SaveAuto(auto, slot);
             return Result("继续",
-                $"自动猜测：{guess}（策略依据上次反馈在 {auto.Low}-{auto.High} 内取中点）\n" +
+                $"自动猜测：{guess} → 判定：{label}（在可行范围 {rangeLow}-{rangeHigh} 内取中点）\n" +
                 $"{message}\n" +
                 $"当前可行范围：{auto.Low}-{auto.High}，本局自动历史：{string.Join("→", auto.History)}，" +
                 $"游戏累计已猜 {state.Attempts} 次\n" +
@@ -446,7 +455,7 @@ public sealed partial class GuessGameTools
         public int High { get; set; }
 
         [JsonPropertyName("history")]
-        public List<int> History { get; set; } = [];
+        public List<string> History { get; set; } = [];
     }
 
     /// <summary>状态模型，JSON 字段名与 python 脚本写入的键完全一致（可互读对方的状态文件）。</summary>
