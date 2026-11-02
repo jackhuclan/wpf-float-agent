@@ -74,6 +74,9 @@ public partial class App : Application
         services.AddSingleton(sp => new WorkspaceScope(sp.GetRequiredService<IConfigService>(), AppContext.BaseDirectory));
         services.AddSingleton<FileTools>();
 
+        // 猜数字游戏工具：目标数字只存在于工具内部与状态文件，不进入对话上下文
+        services.AddSingleton<RecipeDemo.Tools.GuessGameTools>();
+
         // 聊天窗 Hide 复用，必须是单例；配置窗 Close 后不可复用，用瞬时
         services.AddSingleton<ChatViewModel>();
         services.AddSingleton<ChatWindow>();
@@ -103,6 +106,24 @@ public partial class App : Application
 
         Func<string, string?, CancellationToken, Task<string>> writeFile = fileTools.WriteFileAsync;
         registry.AddTool(AIFunctionFactory.Create(writeFile, "write_file"));
+
+        // 猜数字游戏工具（skills/guess-number-game，已由 python 脚本移植为 C#）
+        var guessTools = services.GetRequiredService<RecipeDemo.Tools.GuessGameTools>();
+        Func<int?, int?, string?, string> gameStart = guessTools.StartGame;
+        Func<string?, string?, string> gameGuess = guessTools.Guess;
+        Func<string?, string> gameStatus = guessTools.CheckStatus;
+        Func<string?, string> gameReveal = guessTools.Reveal;
+        Func<string?, string> gameEnd = guessTools.EndGame;
+        registry.AddTool(AIFunctionFactory.Create(gameStart, "guess_game_start",
+            "开始新一轮猜数字游戏：随机生成目标数字（绝不外泄）。未指定范围时默认 1-100。返回以「状态：」开头的结果。"));
+        registry.AddTool(AIFunctionFactory.Create(gameGuess, "guess_game_guess",
+            "判定一次猜数字输入：input 传用户消息原文即可，工具自动抽取唯一整数并给出 小了/大了/猜中 判定。返回以「状态：」开头的结果（继续/猜中/输入无效/无对局）。"));
+        registry.AddTool(AIFunctionFactory.Create(gameStatus, "guess_game_status",
+            "查看猜数字游戏当前轮次、范围与已猜次数（不含答案）。"));
+        registry.AddTool(AIFunctionFactory.Create(gameReveal, "guess_game_reveal",
+            "揭示上一轮猜数字游戏的目标数字（仅在本轮已猜中后有效）。"));
+        registry.AddTool(AIFunctionFactory.Create(gameEnd, "guess_game_end",
+            "结束猜数字游戏并输出总结（含目标数字）。"));
     }
 
     protected override void OnExit(ExitEventArgs e)
