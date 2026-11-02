@@ -2,8 +2,8 @@ namespace RecipeDemo.Tools;
 
 /// <summary>
 /// 自动猜测策略（guess_game_auto 的大脑）：纯函数，只依据「当前可行范围」决定下一个猜测数字。
-/// 有意与判定引擎（<see cref="GuessGameTools"/>）分离——本类不接触任何状态文件，
-/// 结构上无法获知目标数字；它对游戏的所有了解只有「上一次反馈是大了还是小了」。
+/// 有意与判定引擎（<see cref="GuessGameTools"/>）分离——本类不接触任何对局状态（既无文件也无内存状态），
+/// 只接收调用方传入的可行范围；它对游戏的所有了解只有「上一次反馈是大了还是小了」。
 /// </summary>
 public static class GuessGameAutoStrategy
 {

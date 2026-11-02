@@ -1,11 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using FloatAgent.Abstractions;
 
@@ -13,16 +9,16 @@ namespace RecipeDemo.Tools;
 
 /// <summary>
 /// 猜数字游戏状态引擎（完整移植自 skills/guess-number-game/scripts/guess_game.py）。
-/// 设计原则：目标数字只在工具内部与状态文件中存在，除 reveal / end 外绝不输出，
+/// 设计原则：目标数字只在工具内部的进程内存里存在，除 reveal / end 外绝不输出，
 /// 模型无需也无法在上下文里携带真实答案，从根本上避免泄露。
+/// 对局状态（目标数字、轮次、次数）与自动猜测状态（可行范围、历史）全部保存在内存字典中，
+/// 不读写任何文件；进程退出即清空，下一次启动从「无对局」开始。
 /// 所有工具返回值统一为两行：第一行「状态：…」对应原脚本的退出码分支
 /// （继续=0 / 猜中=10 / 输入无效=11 / 无对局=12 / 用法错误=2 / 已结束=end 的正常收尾），
 /// 第二行起为与脚本 stdout 逐字一致的文案。
 /// </summary>
 public sealed partial class GuessGameTools
 {
-    private const int StateVersion = 1;
-
     private const string MsgSmall = "你输入的数字小了，请再输入一个数字";
     private const string MsgBig = "你输入的数字大了，请再输入一个数字";
     private const string MsgWin = "你答对了";
@@ -31,19 +27,19 @@ public sealed partial class GuessGameTools
     private const string MsgRoundOver = "本轮已经结束，请先开始新一轮游戏。";
     private const string MsgTooMany = "一次只能猜一个数字，请输入一个数字：";
 
-    /// <summary>状态文件读写互斥（同一 slot 的工具调用可能并发到达）。</summary>
+    /// <summary>状态读写互斥（同一 slot 的工具调用可能并发到达）。</summary>
     private static readonly object Gate = new();
+
+    /// <summary>对局状态（进程内存，不落盘）：slot → 当前轮次状态。</summary>
+    private static readonly Dictionary<string, GameState> Games = new(StringComparer.Ordinal);
+
+    /// <summary>自动猜测状态（进程内存，不落盘）：slot → 可行范围与猜测历史。</summary>
+    private static readonly Dictionary<string, AutoState> AutoGames = new(StringComparer.Ordinal);
 
     /// <summary>界面进度广播（可选）：自动猜测把每轮的数字与判定推到“正在输入”气泡的状态行。</summary>
     private readonly ToolProgressService? _progress;
 
     public GuessGameTools(ToolProgressService? progress = null) => _progress = progress;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = false,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
 
     [GeneratedRegex(@"[+-]?\d+(?:\.\d+)?")]
     private static partial Regex NumTokenRegex();
@@ -254,7 +250,7 @@ public sealed partial class GuessGameTools
 
     /// <summary>
     /// 共用判定路径：guess_game_guess 与 guess_game_auto 都经由本方法判定，
-    /// 越界不计次、命中置 won、文案与落盘行为完全一致——保证自动模式不改变任何游戏规则。
+    /// 越界不计次、命中置 won、文案与计数行为完全一致——保证自动模式不改变任何游戏规则。
     /// 返回（状态标签, 反馈, 文案）。
     /// </summary>
     private (string Status, Feedback Feedback, string Message) JudgeGuess(GameState state, int guess, string? slot)
@@ -287,112 +283,25 @@ public sealed partial class GuessGameTools
     /// <summary>向聊天界面广播一条进度（无订阅者时空操作）。</summary>
     private void Report(string message) => _progress?.Report(message);
 
-    private static string StatePath(string? slot)
+    /// <summary>槽位名归一化：仅保留字母/数字/'-'/'_'，空值回落 default（纯内存键，不涉及路径）。</summary>
+    private static string SlotKey(string? slot)
     {
-        var baseDir = Path.Combine(Path.GetTempPath(), "guess-number-game");
-        Directory.CreateDirectory(baseDir);
         var safe = new string(
             (slot ?? "default").Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
-        if (safe.Length == 0)
-        {
-            safe = "default";
-        }
-
-        return Path.Combine(baseDir, $"{safe}.json");
+        return safe.Length == 0 ? "default" : safe;
     }
 
-    private static GameState? Load(string? slot)
-    {
-        var path = StatePath(slot);
-        if (!File.Exists(path))
-        {
-            return null;
-        }
+    private static GameState? Load(string? slot) => Games.GetValueOrDefault(SlotKey(slot));
 
-        try
-        {
-            using var stream = File.OpenRead(path);
-            var data = JsonSerializer.Deserialize<GameState>(stream);
-            return data is { Version: StateVersion } ? data : null;
-        }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
+    private static void Save(GameState state, string? slot) => Games[SlotKey(slot)] = state;
 
-    private static void Save(GameState state, string? slot) =>
-        File.WriteAllText(StatePath(slot), JsonSerializer.Serialize(state, JsonOptions), new UTF8Encoding(false));
+    private static void Drop(string? slot) => Games.Remove(SlotKey(slot));
 
-    private static void Drop(string? slot)
-    {
-        var path = StatePath(slot);
-        if (File.Exists(path))
-        {
-            try
-            {
-                File.Delete(path);
-            }
-            catch (IOException)
-            {
-                // 与脚本一致：删除失败静默忽略
-            }
-        }
-    }
+    private static AutoState? LoadAuto(string? slot) => AutoGames.GetValueOrDefault(SlotKey(slot));
 
-    /// <summary>自动对局状态文件（&lt;slot&gt;.auto.json），只存可行范围与猜测历史，不含目标数字。</summary>
-    private static string AutoStatePath(string? slot)
-    {
-        var baseDir = Path.Combine(Path.GetTempPath(), "guess-number-game");
-        Directory.CreateDirectory(baseDir);
-        var safe = new string(
-            (slot ?? "default").Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
-        if (safe.Length == 0)
-        {
-            safe = "default";
-        }
+    private static void SaveAuto(AutoState state, string? slot) => AutoGames[SlotKey(slot)] = state;
 
-        return Path.Combine(baseDir, $"{safe}.auto.json");
-    }
-
-    private static AutoState? LoadAuto(string? slot)
-    {
-        var path = AutoStatePath(slot);
-        if (!File.Exists(path))
-        {
-            return null;
-        }
-
-        try
-        {
-            using var stream = File.OpenRead(path);
-            var data = JsonSerializer.Deserialize<AutoState>(stream);
-            return data is { Version: StateVersion } ? data : null;
-        }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
-
-    private static void SaveAuto(AutoState state, string? slot) =>
-        File.WriteAllText(AutoStatePath(slot), JsonSerializer.Serialize(state, JsonOptions), new UTF8Encoding(false));
-
-    private static void DropAuto(string? slot)
-    {
-        var path = AutoStatePath(slot);
-        if (File.Exists(path))
-        {
-            try
-            {
-                File.Delete(path);
-            }
-            catch (IOException)
-            {
-                // 删除失败静默忽略：下次调用会因轮次号不一致而重置
-            }
-        }
-    }
+    private static void DropAuto(string? slot) => AutoGames.Remove(SlotKey(slot));
 
     /// <summary>全角转半角（NFKC）、去首尾空白，并去除千分位分隔符。</summary>
     private static string Normalize(string? raw) =>
@@ -452,47 +361,31 @@ public sealed partial class GuessGameTools
         return (null, MsgInvalid);
     }
 
-    /// <summary>自动对局状态：只含轮次号、可行范围与猜测历史——没有目标数字，泄露面为零。</summary>
+    /// <summary>自动对局状态（进程内存）：只含轮次号、可行范围与猜测历史——没有目标数字，泄露面为零。</summary>
     private sealed class AutoState
     {
-        [JsonPropertyName("version")]
-        public int Version { get; set; } = StateVersion;
-
-        [JsonPropertyName("round")]
         public int Round { get; set; }
 
-        [JsonPropertyName("low")]
         public int Low { get; set; }
 
-        [JsonPropertyName("high")]
         public int High { get; set; }
 
-        [JsonPropertyName("history")]
         public List<string> History { get; set; } = [];
     }
 
-    /// <summary>状态模型，JSON 字段名与 python 脚本写入的键完全一致（可互读对方的状态文件）。</summary>
+    /// <summary>对局状态（进程内存）：目标数字只存在于这里，不会出现在任何返回值或文件中。</summary>
     private sealed class GameState
     {
-        [JsonPropertyName("version")]
-        public int Version { get; set; } = StateVersion;
-
-        [JsonPropertyName("target")]
         public int Target { get; set; }
 
-        [JsonPropertyName("min")]
         public int Min { get; set; }
 
-        [JsonPropertyName("max")]
         public int Max { get; set; }
 
-        [JsonPropertyName("round")]
         public int Round { get; set; }
 
-        [JsonPropertyName("attempts")]
         public int Attempts { get; set; }
 
-        [JsonPropertyName("status")]
         public string Status { get; set; } = "playing";
     }
 }
